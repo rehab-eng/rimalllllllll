@@ -30,6 +30,7 @@ export type FuelLogAvgAggregateOutputType = {
   id: number | null
   driverId: number | null
   vehicleId: number | null
+  stationId: number | null
   liters: runtime.Decimal | null
 }
 
@@ -37,6 +38,7 @@ export type FuelLogSumAggregateOutputType = {
   id: number | null
   driverId: number | null
   vehicleId: number | null
+  stationId: number | null
   liters: runtime.Decimal | null
 }
 
@@ -44,8 +46,11 @@ export type FuelLogMinAggregateOutputType = {
   id: number | null
   driverId: number | null
   vehicleId: number | null
+  stationId: number | null
   liters: runtime.Decimal | null
+  fuel_type: $Enums.FuelType | null
   date: Date | null
+  confirmed_at: Date | null
   status: $Enums.FuelLogStatus | null
 }
 
@@ -53,8 +58,11 @@ export type FuelLogMaxAggregateOutputType = {
   id: number | null
   driverId: number | null
   vehicleId: number | null
+  stationId: number | null
   liters: runtime.Decimal | null
+  fuel_type: $Enums.FuelType | null
   date: Date | null
+  confirmed_at: Date | null
   status: $Enums.FuelLogStatus | null
 }
 
@@ -62,8 +70,11 @@ export type FuelLogCountAggregateOutputType = {
   id: number
   driverId: number
   vehicleId: number
+  stationId: number
   liters: number
+  fuel_type: number
   date: number
+  confirmed_at: number
   status: number
   _all: number
 }
@@ -73,6 +84,7 @@ export type FuelLogAvgAggregateInputType = {
   id?: true
   driverId?: true
   vehicleId?: true
+  stationId?: true
   liters?: true
 }
 
@@ -80,6 +92,7 @@ export type FuelLogSumAggregateInputType = {
   id?: true
   driverId?: true
   vehicleId?: true
+  stationId?: true
   liters?: true
 }
 
@@ -87,8 +100,11 @@ export type FuelLogMinAggregateInputType = {
   id?: true
   driverId?: true
   vehicleId?: true
+  stationId?: true
   liters?: true
+  fuel_type?: true
   date?: true
+  confirmed_at?: true
   status?: true
 }
 
@@ -96,8 +112,11 @@ export type FuelLogMaxAggregateInputType = {
   id?: true
   driverId?: true
   vehicleId?: true
+  stationId?: true
   liters?: true
+  fuel_type?: true
   date?: true
+  confirmed_at?: true
   status?: true
 }
 
@@ -105,8 +124,11 @@ export type FuelLogCountAggregateInputType = {
   id?: true
   driverId?: true
   vehicleId?: true
+  stationId?: true
   liters?: true
+  fuel_type?: true
   date?: true
+  confirmed_at?: true
   status?: true
   _all?: true
 }
@@ -201,8 +223,11 @@ export type FuelLogGroupByOutputType = {
   id: number
   driverId: number
   vehicleId: number
+  stationId: number | null
   liters: runtime.Decimal
+  fuel_type: $Enums.FuelType
   date: Date
+  confirmed_at: Date | null
   status: $Enums.FuelLogStatus
   _count: FuelLogCountAggregateOutputType | null
   _avg: FuelLogAvgAggregateOutputType | null
@@ -233,22 +258,30 @@ export type FuelLogWhereInput = {
   id?: Prisma.IntFilter<"FuelLog"> | number
   driverId?: Prisma.IntFilter<"FuelLog"> | number
   vehicleId?: Prisma.IntFilter<"FuelLog"> | number
+  stationId?: Prisma.IntNullableFilter<"FuelLog"> | number | null
   liters?: Prisma.DecimalFilter<"FuelLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFilter<"FuelLog"> | $Enums.FuelType
   date?: Prisma.DateTimeFilter<"FuelLog"> | Date | string
+  confirmed_at?: Prisma.DateTimeNullableFilter<"FuelLog"> | Date | string | null
   status?: Prisma.EnumFuelLogStatusFilter<"FuelLog"> | $Enums.FuelLogStatus
   driver?: Prisma.XOR<Prisma.DriverScalarRelationFilter, Prisma.DriverWhereInput>
   vehicle?: Prisma.XOR<Prisma.VehicleScalarRelationFilter, Prisma.VehicleWhereInput>
+  station?: Prisma.XOR<Prisma.StationNullableScalarRelationFilter, Prisma.StationWhereInput> | null
 }
 
 export type FuelLogOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   driverId?: Prisma.SortOrder
   vehicleId?: Prisma.SortOrder
+  stationId?: Prisma.SortOrderInput | Prisma.SortOrder
   liters?: Prisma.SortOrder
+  fuel_type?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  confirmed_at?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   driver?: Prisma.DriverOrderByWithRelationInput
   vehicle?: Prisma.VehicleOrderByWithRelationInput
+  station?: Prisma.StationOrderByWithRelationInput
 }
 
 export type FuelLogWhereUniqueInput = Prisma.AtLeast<{
@@ -258,19 +291,26 @@ export type FuelLogWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.FuelLogWhereInput | Prisma.FuelLogWhereInput[]
   driverId?: Prisma.IntFilter<"FuelLog"> | number
   vehicleId?: Prisma.IntFilter<"FuelLog"> | number
+  stationId?: Prisma.IntNullableFilter<"FuelLog"> | number | null
   liters?: Prisma.DecimalFilter<"FuelLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFilter<"FuelLog"> | $Enums.FuelType
   date?: Prisma.DateTimeFilter<"FuelLog"> | Date | string
+  confirmed_at?: Prisma.DateTimeNullableFilter<"FuelLog"> | Date | string | null
   status?: Prisma.EnumFuelLogStatusFilter<"FuelLog"> | $Enums.FuelLogStatus
   driver?: Prisma.XOR<Prisma.DriverScalarRelationFilter, Prisma.DriverWhereInput>
   vehicle?: Prisma.XOR<Prisma.VehicleScalarRelationFilter, Prisma.VehicleWhereInput>
+  station?: Prisma.XOR<Prisma.StationNullableScalarRelationFilter, Prisma.StationWhereInput> | null
 }, "id">
 
 export type FuelLogOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   driverId?: Prisma.SortOrder
   vehicleId?: Prisma.SortOrder
+  stationId?: Prisma.SortOrderInput | Prisma.SortOrder
   liters?: Prisma.SortOrder
+  fuel_type?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  confirmed_at?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   _count?: Prisma.FuelLogCountOrderByAggregateInput
   _avg?: Prisma.FuelLogAvgOrderByAggregateInput
@@ -286,42 +326,57 @@ export type FuelLogScalarWhereWithAggregatesInput = {
   id?: Prisma.IntWithAggregatesFilter<"FuelLog"> | number
   driverId?: Prisma.IntWithAggregatesFilter<"FuelLog"> | number
   vehicleId?: Prisma.IntWithAggregatesFilter<"FuelLog"> | number
+  stationId?: Prisma.IntNullableWithAggregatesFilter<"FuelLog"> | number | null
   liters?: Prisma.DecimalWithAggregatesFilter<"FuelLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeWithAggregatesFilter<"FuelLog"> | $Enums.FuelType
   date?: Prisma.DateTimeWithAggregatesFilter<"FuelLog"> | Date | string
+  confirmed_at?: Prisma.DateTimeNullableWithAggregatesFilter<"FuelLog"> | Date | string | null
   status?: Prisma.EnumFuelLogStatusWithAggregatesFilter<"FuelLog"> | $Enums.FuelLogStatus
 }
 
 export type FuelLogCreateInput = {
   liters: runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: $Enums.FuelType
   date?: Date | string
+  confirmed_at?: Date | string | null
   status?: $Enums.FuelLogStatus
   driver: Prisma.DriverCreateNestedOneWithoutFuel_logsInput
   vehicle: Prisma.VehicleCreateNestedOneWithoutFuel_logsInput
+  station?: Prisma.StationCreateNestedOneWithoutFuel_logsInput
 }
 
 export type FuelLogUncheckedCreateInput = {
   id?: number
   driverId: number
   vehicleId: number
+  stationId?: number | null
   liters: runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: $Enums.FuelType
   date?: Date | string
+  confirmed_at?: Date | string | null
   status?: $Enums.FuelLogStatus
 }
 
 export type FuelLogUpdateInput = {
   liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
   driver?: Prisma.DriverUpdateOneRequiredWithoutFuel_logsNestedInput
   vehicle?: Prisma.VehicleUpdateOneRequiredWithoutFuel_logsNestedInput
+  station?: Prisma.StationUpdateOneWithoutFuel_logsNestedInput
 }
 
 export type FuelLogUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   driverId?: Prisma.IntFieldUpdateOperationsInput | number
   vehicleId?: Prisma.IntFieldUpdateOperationsInput | number
+  stationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
 }
 
@@ -329,14 +384,19 @@ export type FuelLogCreateManyInput = {
   id?: number
   driverId: number
   vehicleId: number
+  stationId?: number | null
   liters: runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: $Enums.FuelType
   date?: Date | string
+  confirmed_at?: Date | string | null
   status?: $Enums.FuelLogStatus
 }
 
 export type FuelLogUpdateManyMutationInput = {
   liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
 }
 
@@ -344,8 +404,11 @@ export type FuelLogUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   driverId?: Prisma.IntFieldUpdateOperationsInput | number
   vehicleId?: Prisma.IntFieldUpdateOperationsInput | number
+  stationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
 }
 
@@ -363,8 +426,11 @@ export type FuelLogCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   driverId?: Prisma.SortOrder
   vehicleId?: Prisma.SortOrder
+  stationId?: Prisma.SortOrder
   liters?: Prisma.SortOrder
+  fuel_type?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  confirmed_at?: Prisma.SortOrder
   status?: Prisma.SortOrder
 }
 
@@ -372,6 +438,7 @@ export type FuelLogAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
   driverId?: Prisma.SortOrder
   vehicleId?: Prisma.SortOrder
+  stationId?: Prisma.SortOrder
   liters?: Prisma.SortOrder
 }
 
@@ -379,8 +446,11 @@ export type FuelLogMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   driverId?: Prisma.SortOrder
   vehicleId?: Prisma.SortOrder
+  stationId?: Prisma.SortOrder
   liters?: Prisma.SortOrder
+  fuel_type?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  confirmed_at?: Prisma.SortOrder
   status?: Prisma.SortOrder
 }
 
@@ -388,8 +458,11 @@ export type FuelLogMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   driverId?: Prisma.SortOrder
   vehicleId?: Prisma.SortOrder
+  stationId?: Prisma.SortOrder
   liters?: Prisma.SortOrder
+  fuel_type?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  confirmed_at?: Prisma.SortOrder
   status?: Prisma.SortOrder
 }
 
@@ -397,6 +470,7 @@ export type FuelLogSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
   driverId?: Prisma.SortOrder
   vehicleId?: Prisma.SortOrder
+  stationId?: Prisma.SortOrder
   liters?: Prisma.SortOrder
 }
 
@@ -484,26 +558,82 @@ export type FuelLogUncheckedUpdateManyWithoutVehicleNestedInput = {
   deleteMany?: Prisma.FuelLogScalarWhereInput | Prisma.FuelLogScalarWhereInput[]
 }
 
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
+export type FuelLogCreateNestedManyWithoutStationInput = {
+  create?: Prisma.XOR<Prisma.FuelLogCreateWithoutStationInput, Prisma.FuelLogUncheckedCreateWithoutStationInput> | Prisma.FuelLogCreateWithoutStationInput[] | Prisma.FuelLogUncheckedCreateWithoutStationInput[]
+  connectOrCreate?: Prisma.FuelLogCreateOrConnectWithoutStationInput | Prisma.FuelLogCreateOrConnectWithoutStationInput[]
+  createMany?: Prisma.FuelLogCreateManyStationInputEnvelope
+  connect?: Prisma.FuelLogWhereUniqueInput | Prisma.FuelLogWhereUniqueInput[]
+}
+
+export type FuelLogUncheckedCreateNestedManyWithoutStationInput = {
+  create?: Prisma.XOR<Prisma.FuelLogCreateWithoutStationInput, Prisma.FuelLogUncheckedCreateWithoutStationInput> | Prisma.FuelLogCreateWithoutStationInput[] | Prisma.FuelLogUncheckedCreateWithoutStationInput[]
+  connectOrCreate?: Prisma.FuelLogCreateOrConnectWithoutStationInput | Prisma.FuelLogCreateOrConnectWithoutStationInput[]
+  createMany?: Prisma.FuelLogCreateManyStationInputEnvelope
+  connect?: Prisma.FuelLogWhereUniqueInput | Prisma.FuelLogWhereUniqueInput[]
+}
+
+export type FuelLogUpdateManyWithoutStationNestedInput = {
+  create?: Prisma.XOR<Prisma.FuelLogCreateWithoutStationInput, Prisma.FuelLogUncheckedCreateWithoutStationInput> | Prisma.FuelLogCreateWithoutStationInput[] | Prisma.FuelLogUncheckedCreateWithoutStationInput[]
+  connectOrCreate?: Prisma.FuelLogCreateOrConnectWithoutStationInput | Prisma.FuelLogCreateOrConnectWithoutStationInput[]
+  upsert?: Prisma.FuelLogUpsertWithWhereUniqueWithoutStationInput | Prisma.FuelLogUpsertWithWhereUniqueWithoutStationInput[]
+  createMany?: Prisma.FuelLogCreateManyStationInputEnvelope
+  set?: Prisma.FuelLogWhereUniqueInput | Prisma.FuelLogWhereUniqueInput[]
+  disconnect?: Prisma.FuelLogWhereUniqueInput | Prisma.FuelLogWhereUniqueInput[]
+  delete?: Prisma.FuelLogWhereUniqueInput | Prisma.FuelLogWhereUniqueInput[]
+  connect?: Prisma.FuelLogWhereUniqueInput | Prisma.FuelLogWhereUniqueInput[]
+  update?: Prisma.FuelLogUpdateWithWhereUniqueWithoutStationInput | Prisma.FuelLogUpdateWithWhereUniqueWithoutStationInput[]
+  updateMany?: Prisma.FuelLogUpdateManyWithWhereWithoutStationInput | Prisma.FuelLogUpdateManyWithWhereWithoutStationInput[]
+  deleteMany?: Prisma.FuelLogScalarWhereInput | Prisma.FuelLogScalarWhereInput[]
+}
+
+export type FuelLogUncheckedUpdateManyWithoutStationNestedInput = {
+  create?: Prisma.XOR<Prisma.FuelLogCreateWithoutStationInput, Prisma.FuelLogUncheckedCreateWithoutStationInput> | Prisma.FuelLogCreateWithoutStationInput[] | Prisma.FuelLogUncheckedCreateWithoutStationInput[]
+  connectOrCreate?: Prisma.FuelLogCreateOrConnectWithoutStationInput | Prisma.FuelLogCreateOrConnectWithoutStationInput[]
+  upsert?: Prisma.FuelLogUpsertWithWhereUniqueWithoutStationInput | Prisma.FuelLogUpsertWithWhereUniqueWithoutStationInput[]
+  createMany?: Prisma.FuelLogCreateManyStationInputEnvelope
+  set?: Prisma.FuelLogWhereUniqueInput | Prisma.FuelLogWhereUniqueInput[]
+  disconnect?: Prisma.FuelLogWhereUniqueInput | Prisma.FuelLogWhereUniqueInput[]
+  delete?: Prisma.FuelLogWhereUniqueInput | Prisma.FuelLogWhereUniqueInput[]
+  connect?: Prisma.FuelLogWhereUniqueInput | Prisma.FuelLogWhereUniqueInput[]
+  update?: Prisma.FuelLogUpdateWithWhereUniqueWithoutStationInput | Prisma.FuelLogUpdateWithWhereUniqueWithoutStationInput[]
+  updateMany?: Prisma.FuelLogUpdateManyWithWhereWithoutStationInput | Prisma.FuelLogUpdateManyWithWhereWithoutStationInput[]
+  deleteMany?: Prisma.FuelLogScalarWhereInput | Prisma.FuelLogScalarWhereInput[]
+}
+
+export type EnumFuelTypeFieldUpdateOperationsInput = {
+  set?: $Enums.FuelType
 }
 
 export type EnumFuelLogStatusFieldUpdateOperationsInput = {
   set?: $Enums.FuelLogStatus
 }
 
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type FuelLogCreateWithoutDriverInput = {
   liters: runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: $Enums.FuelType
   date?: Date | string
+  confirmed_at?: Date | string | null
   status?: $Enums.FuelLogStatus
   vehicle: Prisma.VehicleCreateNestedOneWithoutFuel_logsInput
+  station?: Prisma.StationCreateNestedOneWithoutFuel_logsInput
 }
 
 export type FuelLogUncheckedCreateWithoutDriverInput = {
   id?: number
   vehicleId: number
+  stationId?: number | null
   liters: runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: $Enums.FuelType
   date?: Date | string
+  confirmed_at?: Date | string | null
   status?: $Enums.FuelLogStatus
 }
 
@@ -540,23 +670,32 @@ export type FuelLogScalarWhereInput = {
   id?: Prisma.IntFilter<"FuelLog"> | number
   driverId?: Prisma.IntFilter<"FuelLog"> | number
   vehicleId?: Prisma.IntFilter<"FuelLog"> | number
+  stationId?: Prisma.IntNullableFilter<"FuelLog"> | number | null
   liters?: Prisma.DecimalFilter<"FuelLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFilter<"FuelLog"> | $Enums.FuelType
   date?: Prisma.DateTimeFilter<"FuelLog"> | Date | string
+  confirmed_at?: Prisma.DateTimeNullableFilter<"FuelLog"> | Date | string | null
   status?: Prisma.EnumFuelLogStatusFilter<"FuelLog"> | $Enums.FuelLogStatus
 }
 
 export type FuelLogCreateWithoutVehicleInput = {
   liters: runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: $Enums.FuelType
   date?: Date | string
+  confirmed_at?: Date | string | null
   status?: $Enums.FuelLogStatus
   driver: Prisma.DriverCreateNestedOneWithoutFuel_logsInput
+  station?: Prisma.StationCreateNestedOneWithoutFuel_logsInput
 }
 
 export type FuelLogUncheckedCreateWithoutVehicleInput = {
   id?: number
   driverId: number
+  stationId?: number | null
   liters: runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: $Enums.FuelType
   date?: Date | string
+  confirmed_at?: Date | string | null
   status?: $Enums.FuelLogStatus
 }
 
@@ -586,65 +725,179 @@ export type FuelLogUpdateManyWithWhereWithoutVehicleInput = {
   data: Prisma.XOR<Prisma.FuelLogUpdateManyMutationInput, Prisma.FuelLogUncheckedUpdateManyWithoutVehicleInput>
 }
 
+export type FuelLogCreateWithoutStationInput = {
+  liters: runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: $Enums.FuelType
+  date?: Date | string
+  confirmed_at?: Date | string | null
+  status?: $Enums.FuelLogStatus
+  driver: Prisma.DriverCreateNestedOneWithoutFuel_logsInput
+  vehicle: Prisma.VehicleCreateNestedOneWithoutFuel_logsInput
+}
+
+export type FuelLogUncheckedCreateWithoutStationInput = {
+  id?: number
+  driverId: number
+  vehicleId: number
+  liters: runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: $Enums.FuelType
+  date?: Date | string
+  confirmed_at?: Date | string | null
+  status?: $Enums.FuelLogStatus
+}
+
+export type FuelLogCreateOrConnectWithoutStationInput = {
+  where: Prisma.FuelLogWhereUniqueInput
+  create: Prisma.XOR<Prisma.FuelLogCreateWithoutStationInput, Prisma.FuelLogUncheckedCreateWithoutStationInput>
+}
+
+export type FuelLogCreateManyStationInputEnvelope = {
+  data: Prisma.FuelLogCreateManyStationInput | Prisma.FuelLogCreateManyStationInput[]
+  skipDuplicates?: boolean
+}
+
+export type FuelLogUpsertWithWhereUniqueWithoutStationInput = {
+  where: Prisma.FuelLogWhereUniqueInput
+  update: Prisma.XOR<Prisma.FuelLogUpdateWithoutStationInput, Prisma.FuelLogUncheckedUpdateWithoutStationInput>
+  create: Prisma.XOR<Prisma.FuelLogCreateWithoutStationInput, Prisma.FuelLogUncheckedCreateWithoutStationInput>
+}
+
+export type FuelLogUpdateWithWhereUniqueWithoutStationInput = {
+  where: Prisma.FuelLogWhereUniqueInput
+  data: Prisma.XOR<Prisma.FuelLogUpdateWithoutStationInput, Prisma.FuelLogUncheckedUpdateWithoutStationInput>
+}
+
+export type FuelLogUpdateManyWithWhereWithoutStationInput = {
+  where: Prisma.FuelLogScalarWhereInput
+  data: Prisma.XOR<Prisma.FuelLogUpdateManyMutationInput, Prisma.FuelLogUncheckedUpdateManyWithoutStationInput>
+}
+
 export type FuelLogCreateManyDriverInput = {
   id?: number
   vehicleId: number
+  stationId?: number | null
   liters: runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: $Enums.FuelType
   date?: Date | string
+  confirmed_at?: Date | string | null
   status?: $Enums.FuelLogStatus
 }
 
 export type FuelLogUpdateWithoutDriverInput = {
   liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
   vehicle?: Prisma.VehicleUpdateOneRequiredWithoutFuel_logsNestedInput
+  station?: Prisma.StationUpdateOneWithoutFuel_logsNestedInput
 }
 
 export type FuelLogUncheckedUpdateWithoutDriverInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   vehicleId?: Prisma.IntFieldUpdateOperationsInput | number
+  stationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
 }
 
 export type FuelLogUncheckedUpdateManyWithoutDriverInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   vehicleId?: Prisma.IntFieldUpdateOperationsInput | number
+  stationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
 }
 
 export type FuelLogCreateManyVehicleInput = {
   id?: number
   driverId: number
+  stationId?: number | null
   liters: runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: $Enums.FuelType
   date?: Date | string
+  confirmed_at?: Date | string | null
   status?: $Enums.FuelLogStatus
 }
 
 export type FuelLogUpdateWithoutVehicleInput = {
   liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
   driver?: Prisma.DriverUpdateOneRequiredWithoutFuel_logsNestedInput
+  station?: Prisma.StationUpdateOneWithoutFuel_logsNestedInput
 }
 
 export type FuelLogUncheckedUpdateWithoutVehicleInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   driverId?: Prisma.IntFieldUpdateOperationsInput | number
+  stationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
 }
 
 export type FuelLogUncheckedUpdateManyWithoutVehicleInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   driverId?: Prisma.IntFieldUpdateOperationsInput | number
+  stationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
+}
+
+export type FuelLogCreateManyStationInput = {
+  id?: number
+  driverId: number
+  vehicleId: number
+  liters: runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: $Enums.FuelType
+  date?: Date | string
+  confirmed_at?: Date | string | null
+  status?: $Enums.FuelLogStatus
+}
+
+export type FuelLogUpdateWithoutStationInput = {
+  liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
+  date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
+  driver?: Prisma.DriverUpdateOneRequiredWithoutFuel_logsNestedInput
+  vehicle?: Prisma.VehicleUpdateOneRequiredWithoutFuel_logsNestedInput
+}
+
+export type FuelLogUncheckedUpdateWithoutStationInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  driverId?: Prisma.IntFieldUpdateOperationsInput | number
+  vehicleId?: Prisma.IntFieldUpdateOperationsInput | number
+  liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
+  date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
+}
+
+export type FuelLogUncheckedUpdateManyWithoutStationInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  driverId?: Prisma.IntFieldUpdateOperationsInput | number
+  vehicleId?: Prisma.IntFieldUpdateOperationsInput | number
+  liters?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  fuel_type?: Prisma.EnumFuelTypeFieldUpdateOperationsInput | $Enums.FuelType
+  date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumFuelLogStatusFieldUpdateOperationsInput | $Enums.FuelLogStatus
 }
 
@@ -654,56 +907,74 @@ export type FuelLogSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   id?: boolean
   driverId?: boolean
   vehicleId?: boolean
+  stationId?: boolean
   liters?: boolean
+  fuel_type?: boolean
   date?: boolean
+  confirmed_at?: boolean
   status?: boolean
   driver?: boolean | Prisma.DriverDefaultArgs<ExtArgs>
   vehicle?: boolean | Prisma.VehicleDefaultArgs<ExtArgs>
+  station?: boolean | Prisma.FuelLog$stationArgs<ExtArgs>
 }, ExtArgs["result"]["fuelLog"]>
 
 export type FuelLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   driverId?: boolean
   vehicleId?: boolean
+  stationId?: boolean
   liters?: boolean
+  fuel_type?: boolean
   date?: boolean
+  confirmed_at?: boolean
   status?: boolean
   driver?: boolean | Prisma.DriverDefaultArgs<ExtArgs>
   vehicle?: boolean | Prisma.VehicleDefaultArgs<ExtArgs>
+  station?: boolean | Prisma.FuelLog$stationArgs<ExtArgs>
 }, ExtArgs["result"]["fuelLog"]>
 
 export type FuelLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   driverId?: boolean
   vehicleId?: boolean
+  stationId?: boolean
   liters?: boolean
+  fuel_type?: boolean
   date?: boolean
+  confirmed_at?: boolean
   status?: boolean
   driver?: boolean | Prisma.DriverDefaultArgs<ExtArgs>
   vehicle?: boolean | Prisma.VehicleDefaultArgs<ExtArgs>
+  station?: boolean | Prisma.FuelLog$stationArgs<ExtArgs>
 }, ExtArgs["result"]["fuelLog"]>
 
 export type FuelLogSelectScalar = {
   id?: boolean
   driverId?: boolean
   vehicleId?: boolean
+  stationId?: boolean
   liters?: boolean
+  fuel_type?: boolean
   date?: boolean
+  confirmed_at?: boolean
   status?: boolean
 }
 
-export type FuelLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "driverId" | "vehicleId" | "liters" | "date" | "status", ExtArgs["result"]["fuelLog"]>
+export type FuelLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "driverId" | "vehicleId" | "stationId" | "liters" | "fuel_type" | "date" | "confirmed_at" | "status", ExtArgs["result"]["fuelLog"]>
 export type FuelLogInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   driver?: boolean | Prisma.DriverDefaultArgs<ExtArgs>
   vehicle?: boolean | Prisma.VehicleDefaultArgs<ExtArgs>
+  station?: boolean | Prisma.FuelLog$stationArgs<ExtArgs>
 }
 export type FuelLogIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   driver?: boolean | Prisma.DriverDefaultArgs<ExtArgs>
   vehicle?: boolean | Prisma.VehicleDefaultArgs<ExtArgs>
+  station?: boolean | Prisma.FuelLog$stationArgs<ExtArgs>
 }
 export type FuelLogIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   driver?: boolean | Prisma.DriverDefaultArgs<ExtArgs>
   vehicle?: boolean | Prisma.VehicleDefaultArgs<ExtArgs>
+  station?: boolean | Prisma.FuelLog$stationArgs<ExtArgs>
 }
 
 export type $FuelLogPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -711,13 +982,17 @@ export type $FuelLogPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   objects: {
     driver: Prisma.$DriverPayload<ExtArgs>
     vehicle: Prisma.$VehiclePayload<ExtArgs>
+    station: Prisma.$StationPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
     driverId: number
     vehicleId: number
+    stationId: number | null
     liters: runtime.Decimal
+    fuel_type: $Enums.FuelType
     date: Date
+    confirmed_at: Date | null
     status: $Enums.FuelLogStatus
   }, ExtArgs["result"]["fuelLog"]>
   composites: {}
@@ -1115,6 +1390,7 @@ export interface Prisma__FuelLogClient<T, Null = never, ExtArgs extends runtime.
   readonly [Symbol.toStringTag]: "PrismaPromise"
   driver<T extends Prisma.DriverDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.DriverDefaultArgs<ExtArgs>>): Prisma.Prisma__DriverClient<runtime.Types.Result.GetResult<Prisma.$DriverPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   vehicle<T extends Prisma.VehicleDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.VehicleDefaultArgs<ExtArgs>>): Prisma.Prisma__VehicleClient<runtime.Types.Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  station<T extends Prisma.FuelLog$stationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FuelLog$stationArgs<ExtArgs>>): Prisma.Prisma__StationClient<runtime.Types.Result.GetResult<Prisma.$StationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1147,8 +1423,11 @@ export interface FuelLogFieldRefs {
   readonly id: Prisma.FieldRef<"FuelLog", 'Int'>
   readonly driverId: Prisma.FieldRef<"FuelLog", 'Int'>
   readonly vehicleId: Prisma.FieldRef<"FuelLog", 'Int'>
+  readonly stationId: Prisma.FieldRef<"FuelLog", 'Int'>
   readonly liters: Prisma.FieldRef<"FuelLog", 'Decimal'>
+  readonly fuel_type: Prisma.FieldRef<"FuelLog", 'FuelType'>
   readonly date: Prisma.FieldRef<"FuelLog", 'DateTime'>
+  readonly confirmed_at: Prisma.FieldRef<"FuelLog", 'DateTime'>
   readonly status: Prisma.FieldRef<"FuelLog", 'FuelLogStatus'>
 }
     
@@ -1548,6 +1827,25 @@ export type FuelLogDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Limit how many FuelLogs to delete.
    */
   limit?: number
+}
+
+/**
+ * FuelLog.station
+ */
+export type FuelLog$stationArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Station
+   */
+  select?: Prisma.StationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Station
+   */
+  omit?: Prisma.StationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.StationInclude<ExtArgs> | null
+  where?: Prisma.StationWhereInput
 }
 
 /**

@@ -13,42 +13,98 @@ enum FuelLogStatus {
   REJECTED
 }
 
+enum FuelType {
+  DIESEL
+  GASOLINE
+}
+
+enum DriverStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
 model Driver {
-  id          Int       @id @default(autoincrement())
-  code        String    @unique @db.VarChar(50)
-  full_name   String    @db.VarChar(150)
-  national_id String    @db.VarChar(50)
-  phone       String    @db.VarChar(32)
-  license_url String    @db.Text
+  id          Int          @id @default(autoincrement())
+  code        String       @unique @db.VarChar(50)
+  full_name   String       @db.VarChar(150)
+  national_id String       @db.VarChar(50)
+  phone       String       @db.VarChar(32)
+  password    String?      @db.VarChar(255)
+  license_url String?      @db.Text
+  license_number String?   @db.VarChar(100)
+  status      DriverStatus @default(ACTIVE)
+  deleted_at  DateTime?
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
   vehicles    Vehicle[]
   fuel_logs   FuelLog[]
+
+  @@index([status])
+  @@index([phone])
 }
 
 model Vehicle {
-  id             Int       @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   driverId       Int
-  truck_type     String    @db.VarChar(100)
-  plates_number  String    @db.VarChar(50)
-  trailer_plates String?   @db.VarChar(50)
-  truck_volume   Decimal   @db.Decimal(10, 2)
-  image_url      String    @db.Text
-  driver         Driver    @relation(fields: [driverId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  truck_type     String   @db.VarChar(100)
+  plates_number  String   @db.VarChar(50)
+  trailer_plates String?  @db.VarChar(50)
+  truck_volume   Decimal  @db.Decimal(10, 2)
+  image_url      String?  @db.Text
+  is_active      Boolean  @default(true)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  driver         Driver   @relation(fields: [driverId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   fuel_logs      FuelLog[]
 
   @@index([driverId])
+  @@index([is_active])
+}
+
+model Station {
+  id         Int              @id @default(autoincrement())
+  name       String           @db.VarChar(150)
+  location   String?          @db.VarChar(150)
+  is_active  Boolean          @default(true)
+  created_at DateTime         @default(now())
+  updated_at DateTime         @updatedAt
+  schedules  StationSchedule[]
+  fuel_logs  FuelLog[]
+
+  @@index([is_active])
+}
+
+model StationSchedule {
+  id          Int      @id @default(autoincrement())
+  stationId   Int
+  day_of_week Int
+  opens_at    String   @db.VarChar(5)
+  closes_at   String   @db.VarChar(5)
+  is_enabled  Boolean  @default(true)
+  station     Station  @relation(fields: [stationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([stationId, day_of_week])
+  @@index([stationId, day_of_week])
 }
 
 model FuelLog {
   id        Int           @id @default(autoincrement())
   driverId  Int
   vehicleId Int
+  stationId Int?
   liters    Decimal       @db.Decimal(10, 2)
+  fuel_type FuelType      @default(DIESEL)
   date      DateTime      @default(now())
+  confirmed_at DateTime?
   status    FuelLogStatus @default(PENDING)
   driver    Driver        @relation(fields: [driverId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   vehicle   Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  station   Station?      @relation(fields: [stationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([driverId])
   @@index([vehicleId])
+  @@index([stationId])
   @@index([driverId, date])
+  @@index([fuel_type])
 }

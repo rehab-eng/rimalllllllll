@@ -386,6 +386,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   Driver: 'Driver',
   Vehicle: 'Vehicle',
+  Station: 'Station',
+  StationSchedule: 'StationSchedule',
   FuelLog: 'FuelLog'
 } as const
 
@@ -402,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "driver" | "vehicle" | "fuelLog"
+    modelProps: "driver" | "vehicle" | "station" | "stationSchedule" | "fuelLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -554,6 +556,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Station: {
+      payload: Prisma.$StationPayload<ExtArgs>
+      fields: Prisma.StationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.StationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.StationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationPayload>
+        }
+        findFirst: {
+          args: Prisma.StationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.StationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationPayload>
+        }
+        findMany: {
+          args: Prisma.StationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationPayload>[]
+        }
+        create: {
+          args: Prisma.StationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationPayload>
+        }
+        createMany: {
+          args: Prisma.StationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.StationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationPayload>[]
+        }
+        delete: {
+          args: Prisma.StationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationPayload>
+        }
+        update: {
+          args: Prisma.StationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationPayload>
+        }
+        deleteMany: {
+          args: Prisma.StationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.StationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.StationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationPayload>[]
+        }
+        upsert: {
+          args: Prisma.StationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationPayload>
+        }
+        aggregate: {
+          args: Prisma.StationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStation>
+        }
+        groupBy: {
+          args: Prisma.StationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.StationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StationCountAggregateOutputType> | number
+        }
+      }
+    }
+    StationSchedule: {
+      payload: Prisma.$StationSchedulePayload<ExtArgs>
+      fields: Prisma.StationScheduleFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.StationScheduleFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationSchedulePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.StationScheduleFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationSchedulePayload>
+        }
+        findFirst: {
+          args: Prisma.StationScheduleFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationSchedulePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.StationScheduleFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationSchedulePayload>
+        }
+        findMany: {
+          args: Prisma.StationScheduleFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationSchedulePayload>[]
+        }
+        create: {
+          args: Prisma.StationScheduleCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationSchedulePayload>
+        }
+        createMany: {
+          args: Prisma.StationScheduleCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.StationScheduleCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationSchedulePayload>[]
+        }
+        delete: {
+          args: Prisma.StationScheduleDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationSchedulePayload>
+        }
+        update: {
+          args: Prisma.StationScheduleUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationSchedulePayload>
+        }
+        deleteMany: {
+          args: Prisma.StationScheduleDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.StationScheduleUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.StationScheduleUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationSchedulePayload>[]
+        }
+        upsert: {
+          args: Prisma.StationScheduleUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StationSchedulePayload>
+        }
+        aggregate: {
+          args: Prisma.StationScheduleAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStationSchedule>
+        }
+        groupBy: {
+          args: Prisma.StationScheduleGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StationScheduleGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.StationScheduleCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StationScheduleCountAggregateOutputType> | number
+        }
+      }
+    }
     FuelLog: {
       payload: Prisma.$FuelLogPayload<ExtArgs>
       fields: Prisma.FuelLogFieldRefs
@@ -673,7 +823,13 @@ export const DriverScalarFieldEnum = {
   full_name: 'full_name',
   national_id: 'national_id',
   phone: 'phone',
-  license_url: 'license_url'
+  password: 'password',
+  license_url: 'license_url',
+  license_number: 'license_number',
+  status: 'status',
+  deleted_at: 'deleted_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
 } as const
 
 export type DriverScalarFieldEnum = (typeof DriverScalarFieldEnum)[keyof typeof DriverScalarFieldEnum]
@@ -686,18 +842,48 @@ export const VehicleScalarFieldEnum = {
   plates_number: 'plates_number',
   trailer_plates: 'trailer_plates',
   truck_volume: 'truck_volume',
-  image_url: 'image_url'
+  image_url: 'image_url',
+  is_active: 'is_active',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
 } as const
 
 export type VehicleScalarFieldEnum = (typeof VehicleScalarFieldEnum)[keyof typeof VehicleScalarFieldEnum]
+
+
+export const StationScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  location: 'location',
+  is_active: 'is_active',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type StationScalarFieldEnum = (typeof StationScalarFieldEnum)[keyof typeof StationScalarFieldEnum]
+
+
+export const StationScheduleScalarFieldEnum = {
+  id: 'id',
+  stationId: 'stationId',
+  day_of_week: 'day_of_week',
+  opens_at: 'opens_at',
+  closes_at: 'closes_at',
+  is_enabled: 'is_enabled'
+} as const
+
+export type StationScheduleScalarFieldEnum = (typeof StationScheduleScalarFieldEnum)[keyof typeof StationScheduleScalarFieldEnum]
 
 
 export const FuelLogScalarFieldEnum = {
   id: 'id',
   driverId: 'driverId',
   vehicleId: 'vehicleId',
+  stationId: 'stationId',
   liters: 'liters',
+  fuel_type: 'fuel_type',
   date: 'date',
+  confirmed_at: 'confirmed_at',
   status: 'status'
 } as const
 
@@ -763,16 +949,16 @@ export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
 
 
 /**
- * Reference to a field of type 'Decimal'
+ * Reference to a field of type 'DriverStatus'
  */
-export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
+export type EnumDriverStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DriverStatus'>
     
 
 
 /**
- * Reference to a field of type 'Decimal[]'
+ * Reference to a field of type 'DriverStatus[]'
  */
-export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
+export type ListEnumDriverStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DriverStatus[]'>
     
 
 
@@ -787,6 +973,41 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'DateTime[]'
  */
 export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Decimal'
+ */
+export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
+    
+
+
+/**
+ * Reference to a field of type 'Decimal[]'
+ */
+export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
+ * Reference to a field of type 'FuelType'
+ */
+export type EnumFuelTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FuelType'>
+    
+
+
+/**
+ * Reference to a field of type 'FuelType[]'
+ */
+export type ListEnumFuelTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FuelType[]'>
     
 
 
@@ -914,6 +1135,8 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   driver?: Prisma.DriverOmit
   vehicle?: Prisma.VehicleOmit
+  station?: Prisma.StationOmit
+  stationSchedule?: Prisma.StationScheduleOmit
   fuelLog?: Prisma.FuelLogOmit
 }
 

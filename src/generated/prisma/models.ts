@@ -10,5 +10,7 @@
  */
 export type * from './models/Driver'
 export type * from './models/Vehicle'
+export type * from './models/Station'
+export type * from './models/StationSchedule'
 export type * from './models/FuelLog'
 export type * from './commonInputTypes'

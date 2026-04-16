@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import type { DriverStatus, FuelLogStatus, FuelType } from "../../generated/prisma/client";
+
 export type ActionResult<T = void> = {
   success: boolean;
   data?: T;
@@ -7,18 +9,42 @@ export type ActionResult<T = void> = {
 };
 
 export type DriverVehicleSummary = {
-  id: number | string;
+  id: number;
   truckType: string;
   platesNumber: string;
   trailerPlates?: string | null;
   imageUrl?: string | null;
+  totalLiters: number;
+  totalLogs: number;
+};
+
+export type DriverStationSummary = {
+  id: number;
+  name: string;
+  location?: string | null;
+  runtimeStatus: "OPEN" | "CLOSED" | "INACTIVE";
+  isActive: boolean;
+  scheduleSummary: string[];
+};
+
+export type DriverFuelHistoryItem = {
+  id: number;
+  liters: number;
+  fuelType: FuelType;
+  status: FuelLogStatus;
+  date: string;
+  stationName?: string | null;
+  vehiclePlates: string;
 };
 
 export type DriverDashboardData = {
   fullName: string;
   code: string;
   totalFilledLiters: number;
-  vehicleCount?: number;
+  totalFuelLogs: number;
+  vehicleCount: number;
+  activeStationCount: number;
+  accountStatus: DriverStatus;
 };
 
 export type DriverNavigationItem = {
@@ -36,13 +62,22 @@ export type AddVehiclePayload = {
 };
 
 export type FuelFillVehicleOption = {
-  id: number | string;
+  id: number;
   truckType: string;
   platesNumber: string;
   trailerPlates?: string | null;
 };
 
+export type FuelFillStationOption = {
+  id: number;
+  name: string;
+  location?: string | null;
+  runtimeStatus: "OPEN" | "CLOSED" | "INACTIVE";
+};
+
 export type FuelFillPayload = {
-  vehicleId: number | string;
+  vehicleId: number;
+  stationId: number;
   liters: number;
+  fuelType: FuelType;
 };

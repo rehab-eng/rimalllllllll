@@ -3,13 +3,14 @@
 :root {
   --background: #020617;
   --foreground: #ffffff;
+  --marble-vein: rgba(255, 255, 255, 0.08);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-manrope);
+  --font-serif: var(--font-playfair);
 }
 
 * {
@@ -23,13 +24,35 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(14, 116, 144, 0.28), transparent 34%),
-    linear-gradient(145deg, #020617 0%, #0f172a 45%, #111827 100%);
+    radial-gradient(circle at top, rgba(250, 250, 249, 0.16), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(168, 162, 158, 0.11), transparent 28%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 26%),
+    linear-gradient(155deg, #030712 0%, #111827 42%, #1f2937 100%);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), Arial, Helvetica, sans-serif;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.45;
+  background:
+    linear-gradient(115deg, transparent 0%, var(--marble-vein) 18%, transparent 34%),
+    linear-gradient(205deg, transparent 4%, rgba(255, 255, 255, 0.05) 19%, transparent 31%),
+    linear-gradient(162deg, transparent 0%, rgba(214, 211, 209, 0.06) 14%, transparent 28%);
+  mix-blend-mode: screen;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-playfair), Georgia, serif;
 }

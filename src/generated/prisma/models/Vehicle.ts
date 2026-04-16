@@ -46,6 +46,9 @@ export type VehicleMinAggregateOutputType = {
   trailer_plates: string | null
   truck_volume: runtime.Decimal | null
   image_url: string | null
+  is_active: boolean | null
+  created_at: Date | null
+  updated_at: Date | null
 }
 
 export type VehicleMaxAggregateOutputType = {
@@ -56,6 +59,9 @@ export type VehicleMaxAggregateOutputType = {
   trailer_plates: string | null
   truck_volume: runtime.Decimal | null
   image_url: string | null
+  is_active: boolean | null
+  created_at: Date | null
+  updated_at: Date | null
 }
 
 export type VehicleCountAggregateOutputType = {
@@ -66,6 +72,9 @@ export type VehicleCountAggregateOutputType = {
   trailer_plates: number
   truck_volume: number
   image_url: number
+  is_active: number
+  created_at: number
+  updated_at: number
   _all: number
 }
 
@@ -90,6 +99,9 @@ export type VehicleMinAggregateInputType = {
   trailer_plates?: true
   truck_volume?: true
   image_url?: true
+  is_active?: true
+  created_at?: true
+  updated_at?: true
 }
 
 export type VehicleMaxAggregateInputType = {
@@ -100,6 +112,9 @@ export type VehicleMaxAggregateInputType = {
   trailer_plates?: true
   truck_volume?: true
   image_url?: true
+  is_active?: true
+  created_at?: true
+  updated_at?: true
 }
 
 export type VehicleCountAggregateInputType = {
@@ -110,6 +125,9 @@ export type VehicleCountAggregateInputType = {
   trailer_plates?: true
   truck_volume?: true
   image_url?: true
+  is_active?: true
+  created_at?: true
+  updated_at?: true
   _all?: true
 }
 
@@ -206,7 +224,10 @@ export type VehicleGroupByOutputType = {
   plates_number: string
   trailer_plates: string | null
   truck_volume: runtime.Decimal
-  image_url: string
+  image_url: string | null
+  is_active: boolean
+  created_at: Date
+  updated_at: Date
   _count: VehicleCountAggregateOutputType | null
   _avg: VehicleAvgAggregateOutputType | null
   _sum: VehicleSumAggregateOutputType | null
@@ -239,7 +260,10 @@ export type VehicleWhereInput = {
   plates_number?: Prisma.StringFilter<"Vehicle"> | string
   trailer_plates?: Prisma.StringNullableFilter<"Vehicle"> | string | null
   truck_volume?: Prisma.DecimalFilter<"Vehicle"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringFilter<"Vehicle"> | string
+  image_url?: Prisma.StringNullableFilter<"Vehicle"> | string | null
+  is_active?: Prisma.BoolFilter<"Vehicle"> | boolean
+  created_at?: Prisma.DateTimeFilter<"Vehicle"> | Date | string
+  updated_at?: Prisma.DateTimeFilter<"Vehicle"> | Date | string
   driver?: Prisma.XOR<Prisma.DriverScalarRelationFilter, Prisma.DriverWhereInput>
   fuel_logs?: Prisma.FuelLogListRelationFilter
 }
@@ -251,7 +275,10 @@ export type VehicleOrderByWithRelationInput = {
   plates_number?: Prisma.SortOrder
   trailer_plates?: Prisma.SortOrderInput | Prisma.SortOrder
   truck_volume?: Prisma.SortOrder
-  image_url?: Prisma.SortOrder
+  image_url?: Prisma.SortOrderInput | Prisma.SortOrder
+  is_active?: Prisma.SortOrder
+  created_at?: Prisma.SortOrder
+  updated_at?: Prisma.SortOrder
   driver?: Prisma.DriverOrderByWithRelationInput
   fuel_logs?: Prisma.FuelLogOrderByRelationAggregateInput
 }
@@ -266,7 +293,10 @@ export type VehicleWhereUniqueInput = Prisma.AtLeast<{
   plates_number?: Prisma.StringFilter<"Vehicle"> | string
   trailer_plates?: Prisma.StringNullableFilter<"Vehicle"> | string | null
   truck_volume?: Prisma.DecimalFilter<"Vehicle"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringFilter<"Vehicle"> | string
+  image_url?: Prisma.StringNullableFilter<"Vehicle"> | string | null
+  is_active?: Prisma.BoolFilter<"Vehicle"> | boolean
+  created_at?: Prisma.DateTimeFilter<"Vehicle"> | Date | string
+  updated_at?: Prisma.DateTimeFilter<"Vehicle"> | Date | string
   driver?: Prisma.XOR<Prisma.DriverScalarRelationFilter, Prisma.DriverWhereInput>
   fuel_logs?: Prisma.FuelLogListRelationFilter
 }, "id">
@@ -278,7 +308,10 @@ export type VehicleOrderByWithAggregationInput = {
   plates_number?: Prisma.SortOrder
   trailer_plates?: Prisma.SortOrderInput | Prisma.SortOrder
   truck_volume?: Prisma.SortOrder
-  image_url?: Prisma.SortOrder
+  image_url?: Prisma.SortOrderInput | Prisma.SortOrder
+  is_active?: Prisma.SortOrder
+  created_at?: Prisma.SortOrder
+  updated_at?: Prisma.SortOrder
   _count?: Prisma.VehicleCountOrderByAggregateInput
   _avg?: Prisma.VehicleAvgOrderByAggregateInput
   _max?: Prisma.VehicleMaxOrderByAggregateInput
@@ -296,7 +329,10 @@ export type VehicleScalarWhereWithAggregatesInput = {
   plates_number?: Prisma.StringWithAggregatesFilter<"Vehicle"> | string
   trailer_plates?: Prisma.StringNullableWithAggregatesFilter<"Vehicle"> | string | null
   truck_volume?: Prisma.DecimalWithAggregatesFilter<"Vehicle"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringWithAggregatesFilter<"Vehicle"> | string
+  image_url?: Prisma.StringNullableWithAggregatesFilter<"Vehicle"> | string | null
+  is_active?: Prisma.BoolWithAggregatesFilter<"Vehicle"> | boolean
+  created_at?: Prisma.DateTimeWithAggregatesFilter<"Vehicle"> | Date | string
+  updated_at?: Prisma.DateTimeWithAggregatesFilter<"Vehicle"> | Date | string
 }
 
 export type VehicleCreateInput = {
@@ -304,7 +340,10 @@ export type VehicleCreateInput = {
   plates_number: string
   trailer_plates?: string | null
   truck_volume: runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url: string
+  image_url?: string | null
+  is_active?: boolean
+  created_at?: Date | string
+  updated_at?: Date | string
   driver: Prisma.DriverCreateNestedOneWithoutVehiclesInput
   fuel_logs?: Prisma.FuelLogCreateNestedManyWithoutVehicleInput
 }
@@ -316,7 +355,10 @@ export type VehicleUncheckedCreateInput = {
   plates_number: string
   trailer_plates?: string | null
   truck_volume: runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url: string
+  image_url?: string | null
+  is_active?: boolean
+  created_at?: Date | string
+  updated_at?: Date | string
   fuel_logs?: Prisma.FuelLogUncheckedCreateNestedManyWithoutVehicleInput
 }
 
@@ -325,7 +367,10 @@ export type VehicleUpdateInput = {
   plates_number?: Prisma.StringFieldUpdateOperationsInput | string
   trailer_plates?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   truck_volume?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringFieldUpdateOperationsInput | string
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   driver?: Prisma.DriverUpdateOneRequiredWithoutVehiclesNestedInput
   fuel_logs?: Prisma.FuelLogUpdateManyWithoutVehicleNestedInput
 }
@@ -337,7 +382,10 @@ export type VehicleUncheckedUpdateInput = {
   plates_number?: Prisma.StringFieldUpdateOperationsInput | string
   trailer_plates?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   truck_volume?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringFieldUpdateOperationsInput | string
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fuel_logs?: Prisma.FuelLogUncheckedUpdateManyWithoutVehicleNestedInput
 }
 
@@ -348,7 +396,10 @@ export type VehicleCreateManyInput = {
   plates_number: string
   trailer_plates?: string | null
   truck_volume: runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url: string
+  image_url?: string | null
+  is_active?: boolean
+  created_at?: Date | string
+  updated_at?: Date | string
 }
 
 export type VehicleUpdateManyMutationInput = {
@@ -356,7 +407,10 @@ export type VehicleUpdateManyMutationInput = {
   plates_number?: Prisma.StringFieldUpdateOperationsInput | string
   trailer_plates?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   truck_volume?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringFieldUpdateOperationsInput | string
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type VehicleUncheckedUpdateManyInput = {
@@ -366,7 +420,10 @@ export type VehicleUncheckedUpdateManyInput = {
   plates_number?: Prisma.StringFieldUpdateOperationsInput | string
   trailer_plates?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   truck_volume?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringFieldUpdateOperationsInput | string
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type VehicleListRelationFilter = {
@@ -387,6 +444,9 @@ export type VehicleCountOrderByAggregateInput = {
   trailer_plates?: Prisma.SortOrder
   truck_volume?: Prisma.SortOrder
   image_url?: Prisma.SortOrder
+  is_active?: Prisma.SortOrder
+  created_at?: Prisma.SortOrder
+  updated_at?: Prisma.SortOrder
 }
 
 export type VehicleAvgOrderByAggregateInput = {
@@ -403,6 +463,9 @@ export type VehicleMaxOrderByAggregateInput = {
   trailer_plates?: Prisma.SortOrder
   truck_volume?: Prisma.SortOrder
   image_url?: Prisma.SortOrder
+  is_active?: Prisma.SortOrder
+  created_at?: Prisma.SortOrder
+  updated_at?: Prisma.SortOrder
 }
 
 export type VehicleMinOrderByAggregateInput = {
@@ -413,6 +476,9 @@ export type VehicleMinOrderByAggregateInput = {
   trailer_plates?: Prisma.SortOrder
   truck_volume?: Prisma.SortOrder
   image_url?: Prisma.SortOrder
+  is_active?: Prisma.SortOrder
+  created_at?: Prisma.SortOrder
+  updated_at?: Prisma.SortOrder
 }
 
 export type VehicleSumOrderByAggregateInput = {
@@ -468,16 +534,16 @@ export type VehicleUncheckedUpdateManyWithoutDriverNestedInput = {
   deleteMany?: Prisma.VehicleScalarWhereInput | Prisma.VehicleScalarWhereInput[]
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type DecimalFieldUpdateOperationsInput = {
   set?: runtime.Decimal | runtime.DecimalJsLike | number | string
   increment?: runtime.Decimal | runtime.DecimalJsLike | number | string
   decrement?: runtime.Decimal | runtime.DecimalJsLike | number | string
   multiply?: runtime.Decimal | runtime.DecimalJsLike | number | string
   divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
+}
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
 }
 
 export type VehicleCreateNestedOneWithoutFuel_logsInput = {
@@ -499,7 +565,10 @@ export type VehicleCreateWithoutDriverInput = {
   plates_number: string
   trailer_plates?: string | null
   truck_volume: runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url: string
+  image_url?: string | null
+  is_active?: boolean
+  created_at?: Date | string
+  updated_at?: Date | string
   fuel_logs?: Prisma.FuelLogCreateNestedManyWithoutVehicleInput
 }
 
@@ -509,7 +578,10 @@ export type VehicleUncheckedCreateWithoutDriverInput = {
   plates_number: string
   trailer_plates?: string | null
   truck_volume: runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url: string
+  image_url?: string | null
+  is_active?: boolean
+  created_at?: Date | string
+  updated_at?: Date | string
   fuel_logs?: Prisma.FuelLogUncheckedCreateNestedManyWithoutVehicleInput
 }
 
@@ -549,7 +621,10 @@ export type VehicleScalarWhereInput = {
   plates_number?: Prisma.StringFilter<"Vehicle"> | string
   trailer_plates?: Prisma.StringNullableFilter<"Vehicle"> | string | null
   truck_volume?: Prisma.DecimalFilter<"Vehicle"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringFilter<"Vehicle"> | string
+  image_url?: Prisma.StringNullableFilter<"Vehicle"> | string | null
+  is_active?: Prisma.BoolFilter<"Vehicle"> | boolean
+  created_at?: Prisma.DateTimeFilter<"Vehicle"> | Date | string
+  updated_at?: Prisma.DateTimeFilter<"Vehicle"> | Date | string
 }
 
 export type VehicleCreateWithoutFuel_logsInput = {
@@ -557,7 +632,10 @@ export type VehicleCreateWithoutFuel_logsInput = {
   plates_number: string
   trailer_plates?: string | null
   truck_volume: runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url: string
+  image_url?: string | null
+  is_active?: boolean
+  created_at?: Date | string
+  updated_at?: Date | string
   driver: Prisma.DriverCreateNestedOneWithoutVehiclesInput
 }
 
@@ -568,7 +646,10 @@ export type VehicleUncheckedCreateWithoutFuel_logsInput = {
   plates_number: string
   trailer_plates?: string | null
   truck_volume: runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url: string
+  image_url?: string | null
+  is_active?: boolean
+  created_at?: Date | string
+  updated_at?: Date | string
 }
 
 export type VehicleCreateOrConnectWithoutFuel_logsInput = {
@@ -592,7 +673,10 @@ export type VehicleUpdateWithoutFuel_logsInput = {
   plates_number?: Prisma.StringFieldUpdateOperationsInput | string
   trailer_plates?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   truck_volume?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringFieldUpdateOperationsInput | string
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   driver?: Prisma.DriverUpdateOneRequiredWithoutVehiclesNestedInput
 }
 
@@ -603,7 +687,10 @@ export type VehicleUncheckedUpdateWithoutFuel_logsInput = {
   plates_number?: Prisma.StringFieldUpdateOperationsInput | string
   trailer_plates?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   truck_volume?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringFieldUpdateOperationsInput | string
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type VehicleCreateManyDriverInput = {
@@ -612,7 +699,10 @@ export type VehicleCreateManyDriverInput = {
   plates_number: string
   trailer_plates?: string | null
   truck_volume: runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url: string
+  image_url?: string | null
+  is_active?: boolean
+  created_at?: Date | string
+  updated_at?: Date | string
 }
 
 export type VehicleUpdateWithoutDriverInput = {
@@ -620,7 +710,10 @@ export type VehicleUpdateWithoutDriverInput = {
   plates_number?: Prisma.StringFieldUpdateOperationsInput | string
   trailer_plates?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   truck_volume?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringFieldUpdateOperationsInput | string
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fuel_logs?: Prisma.FuelLogUpdateManyWithoutVehicleNestedInput
 }
 
@@ -630,7 +723,10 @@ export type VehicleUncheckedUpdateWithoutDriverInput = {
   plates_number?: Prisma.StringFieldUpdateOperationsInput | string
   trailer_plates?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   truck_volume?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringFieldUpdateOperationsInput | string
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fuel_logs?: Prisma.FuelLogUncheckedUpdateManyWithoutVehicleNestedInput
 }
 
@@ -640,7 +736,10 @@ export type VehicleUncheckedUpdateManyWithoutDriverInput = {
   plates_number?: Prisma.StringFieldUpdateOperationsInput | string
   trailer_plates?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   truck_volume?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  image_url?: Prisma.StringFieldUpdateOperationsInput | string
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -682,6 +781,9 @@ export type VehicleSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   trailer_plates?: boolean
   truck_volume?: boolean
   image_url?: boolean
+  is_active?: boolean
+  created_at?: boolean
+  updated_at?: boolean
   driver?: boolean | Prisma.DriverDefaultArgs<ExtArgs>
   fuel_logs?: boolean | Prisma.Vehicle$fuel_logsArgs<ExtArgs>
   _count?: boolean | Prisma.VehicleCountOutputTypeDefaultArgs<ExtArgs>
@@ -695,6 +797,9 @@ export type VehicleSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   trailer_plates?: boolean
   truck_volume?: boolean
   image_url?: boolean
+  is_active?: boolean
+  created_at?: boolean
+  updated_at?: boolean
   driver?: boolean | Prisma.DriverDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["vehicle"]>
 
@@ -706,6 +811,9 @@ export type VehicleSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   trailer_plates?: boolean
   truck_volume?: boolean
   image_url?: boolean
+  is_active?: boolean
+  created_at?: boolean
+  updated_at?: boolean
   driver?: boolean | Prisma.DriverDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["vehicle"]>
 
@@ -717,9 +825,12 @@ export type VehicleSelectScalar = {
   trailer_plates?: boolean
   truck_volume?: boolean
   image_url?: boolean
+  is_active?: boolean
+  created_at?: boolean
+  updated_at?: boolean
 }
 
-export type VehicleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "driverId" | "truck_type" | "plates_number" | "trailer_plates" | "truck_volume" | "image_url", ExtArgs["result"]["vehicle"]>
+export type VehicleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "driverId" | "truck_type" | "plates_number" | "trailer_plates" | "truck_volume" | "image_url" | "is_active" | "created_at" | "updated_at", ExtArgs["result"]["vehicle"]>
 export type VehicleInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   driver?: boolean | Prisma.DriverDefaultArgs<ExtArgs>
   fuel_logs?: boolean | Prisma.Vehicle$fuel_logsArgs<ExtArgs>
@@ -745,7 +856,10 @@ export type $VehiclePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     plates_number: string
     trailer_plates: string | null
     truck_volume: runtime.Decimal
-    image_url: string
+    image_url: string | null
+    is_active: boolean
+    created_at: Date
+    updated_at: Date
   }, ExtArgs["result"]["vehicle"]>
   composites: {}
 }
@@ -1178,6 +1292,9 @@ export interface VehicleFieldRefs {
   readonly trailer_plates: Prisma.FieldRef<"Vehicle", 'String'>
   readonly truck_volume: Prisma.FieldRef<"Vehicle", 'Decimal'>
   readonly image_url: Prisma.FieldRef<"Vehicle", 'String'>
+  readonly is_active: Prisma.FieldRef<"Vehicle", 'Boolean'>
+  readonly created_at: Prisma.FieldRef<"Vehicle", 'DateTime'>
+  readonly updated_at: Prisma.FieldRef<"Vehicle", 'DateTime'>
 }
     
 

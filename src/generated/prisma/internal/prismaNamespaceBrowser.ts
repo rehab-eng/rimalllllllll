@@ -53,6 +53,8 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Driver: 'Driver',
   Vehicle: 'Vehicle',
+  Station: 'Station',
+  StationSchedule: 'StationSchedule',
   FuelLog: 'FuelLog'
 } as const
 
@@ -78,7 +80,13 @@ export const DriverScalarFieldEnum = {
   full_name: 'full_name',
   national_id: 'national_id',
   phone: 'phone',
-  license_url: 'license_url'
+  password: 'password',
+  license_url: 'license_url',
+  license_number: 'license_number',
+  status: 'status',
+  deleted_at: 'deleted_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
 } as const
 
 export type DriverScalarFieldEnum = (typeof DriverScalarFieldEnum)[keyof typeof DriverScalarFieldEnum]
@@ -91,18 +99,48 @@ export const VehicleScalarFieldEnum = {
   plates_number: 'plates_number',
   trailer_plates: 'trailer_plates',
   truck_volume: 'truck_volume',
-  image_url: 'image_url'
+  image_url: 'image_url',
+  is_active: 'is_active',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
 } as const
 
 export type VehicleScalarFieldEnum = (typeof VehicleScalarFieldEnum)[keyof typeof VehicleScalarFieldEnum]
+
+
+export const StationScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  location: 'location',
+  is_active: 'is_active',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type StationScalarFieldEnum = (typeof StationScalarFieldEnum)[keyof typeof StationScalarFieldEnum]
+
+
+export const StationScheduleScalarFieldEnum = {
+  id: 'id',
+  stationId: 'stationId',
+  day_of_week: 'day_of_week',
+  opens_at: 'opens_at',
+  closes_at: 'closes_at',
+  is_enabled: 'is_enabled'
+} as const
+
+export type StationScheduleScalarFieldEnum = (typeof StationScheduleScalarFieldEnum)[keyof typeof StationScheduleScalarFieldEnum]
 
 
 export const FuelLogScalarFieldEnum = {
   id: 'id',
   driverId: 'driverId',
   vehicleId: 'vehicleId',
+  stationId: 'stationId',
   liters: 'liters',
+  fuel_type: 'fuel_type',
   date: 'date',
+  confirmed_at: 'confirmed_at',
   status: 'status'
 } as const
 

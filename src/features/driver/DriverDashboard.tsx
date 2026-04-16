@@ -14,7 +14,7 @@ type DriverDashboardProps = {
   children?: ReactNode;
 };
 
-const formatLiters = (value: number): string =>
+const formatNumber = (value: number): string =>
   new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(value);
@@ -35,12 +35,15 @@ export default function DriverDashboard({
   };
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-4 text-white">
-      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-[28px] p-4 shadow-2xl">
-        <div className="flex items-center justify-between gap-3">
+    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-5 text-white">
+      <div className="bg-white/10 backdrop-blur-md border border-white/20 relative overflow-hidden rounded-[30px] p-5 shadow-2xl">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(190,242,100,0.12),transparent_28%)]" />
+
+        <div className="relative flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-white">Rimall Lines</p>
-            <h1 className="mt-1 text-2xl font-black text-white">{driver.fullName}</h1>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-white">Rimall Lines</p>
+            <h1 className="mt-2 text-3xl font-black text-white">{driver.fullName}</h1>
+            <p className="mt-2 text-sm font-semibold text-white">Driver access and fuel follow-up</p>
           </div>
 
           <button
@@ -52,29 +55,29 @@ export default function DriverDashboard({
             <HamburgerIcon />
           </button>
         </div>
-      </div>
 
-      <div className="bg-white/10 backdrop-blur-md border border-white/20 mt-4 rounded-[28px] p-5 shadow-2xl">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-white">Driver Code</p>
-            <div className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-base font-black text-black">
-              {driver.code}
-            </div>
+        <div className="relative mt-5 flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-full bg-white px-4 py-2 text-sm font-black text-black">
+            {driver.code}
           </div>
-
-          <div className="text-right">
-            <p className="text-sm font-semibold text-white">Total Filled Liters</p>
-            <p className="mt-2 text-4xl font-black leading-none text-white">
-              {formatLiters(driver.totalFilledLiters)}
-            </p>
-            <p className="mt-2 text-sm font-semibold text-white">Liters</p>
+          <div
+            className={`inline-flex rounded-full px-4 py-2 text-sm font-black ${
+              driver.accountStatus === "ACTIVE"
+                ? "bg-white text-black"
+                : "border border-white/20 bg-black/30 text-white"
+            }`}
+          >
+            {driver.accountStatus}
           </div>
         </div>
+      </div>
 
-        <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/20 bg-black/25 px-4 py-3">
-          <span className="text-sm font-bold text-white">Registered Vehicles</span>
-          <span className="text-lg font-black text-white">{driver.vehicleCount ?? 0}</span>
+      <div className="bg-white/10 backdrop-blur-md border border-white/20 mt-4 rounded-[30px] p-5 shadow-2xl">
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard label="Total Liters" value={formatNumber(driver.totalFilledLiters)} helper="All periods" />
+          <StatCard label="Fuel Logs" value={driver.totalFuelLogs} helper="Confirmed fills" />
+          <StatCard label="Vehicles" value={driver.vehicleCount} helper="Registered trucks" />
+          <StatCard label="Open Stations" value={driver.activeStationCount} helper="Available now" />
         </div>
       </div>
 
@@ -86,14 +89,14 @@ export default function DriverDashboard({
             type="button"
             aria-label="Close navigation menu"
             onClick={() => setIsMenuOpen(false)}
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-black/70"
           />
 
-          <aside className="bg-white/10 backdrop-blur-md border border-white/20 absolute left-4 top-4 bottom-4 z-50 flex w-[min(18rem,calc(100vw-2rem))] flex-col rounded-[32px] p-4 text-white shadow-2xl">
+          <aside className="bg-white/10 backdrop-blur-md border border-white/20 absolute left-4 right-4 top-4 z-50 rounded-[30px] p-4 text-white shadow-2xl">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-white">Navigation</p>
-                <p className="mt-1 text-lg font-black text-white">{driver.fullName}</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-white">Navigation</p>
+                <p className="mt-2 text-lg font-black text-white">{driver.fullName}</p>
               </div>
 
               <button
@@ -106,7 +109,7 @@ export default function DriverDashboard({
               </button>
             </div>
 
-            <nav className="mt-6 flex flex-1 flex-col gap-3">
+            <nav className="mt-5 flex flex-col gap-3">
               {navigationItems.map((item) => {
                 const isActive = activeNavId === item.id;
 
@@ -115,7 +118,7 @@ export default function DriverDashboard({
                     key={item.id}
                     type="button"
                     onClick={() => handleNavigate(item.id)}
-                    className={`flex min-h-16 items-center gap-3 rounded-2xl border px-4 text-left ${
+                    className={`flex min-h-14 items-center gap-3 rounded-2xl border px-4 text-left ${
                       isActive
                         ? "border-white bg-white text-black"
                         : "border-white/20 bg-black/25 text-white"
@@ -135,13 +138,31 @@ export default function DriverDashboard({
             <button
               type="button"
               onClick={onSignOut}
-              className="mt-4 min-h-14 rounded-2xl border border-white/20 bg-black/30 px-4 text-base font-black text-white"
+              className="mt-4 min-h-14 w-full rounded-2xl border border-white/20 bg-black/30 px-4 text-base font-black text-white"
             >
               Sign Out
             </button>
           </aside>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: number | string;
+  helper: string;
+}) {
+  return (
+    <div className="rounded-[24px] border border-white/20 bg-black/25 p-4">
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-white">{label}</p>
+      <p className="mt-3 text-3xl font-black text-white">{value}</p>
+      <p className="mt-2 text-sm font-semibold text-white">{helper}</p>
     </div>
   );
 }

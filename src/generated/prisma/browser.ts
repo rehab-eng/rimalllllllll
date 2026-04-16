@@ -28,6 +28,16 @@ export type Driver = Prisma.DriverModel
  */
 export type Vehicle = Prisma.VehicleModel
 /**
+ * Model Station
+ * 
+ */
+export type Station = Prisma.StationModel
+/**
+ * Model StationSchedule
+ * 
+ */
+export type StationSchedule = Prisma.StationScheduleModel
+/**
  * Model FuelLog
  * 
  */

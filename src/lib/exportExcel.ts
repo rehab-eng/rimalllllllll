@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 
-import type { Driver, FuelLog, Vehicle } from "../generated/prisma/client";
+import type { Driver, FuelLog, FuelType, Station, Vehicle } from "../generated/prisma/client";
 
 type ActionResponse<T> = {
   success: boolean;
@@ -11,6 +11,7 @@ type ActionResponse<T> = {
 export type FuelLogExcelItem = FuelLog & {
   driver?: Pick<Driver, "code" | "full_name"> | null;
   vehicle?: Pick<Vehicle, "plates_number" | "trailer_plates" | "truck_type"> | null;
+  station?: Pick<Station, "name"> | null;
 };
 
 const statusLabels: Record<FuelLog["status"], string> = {
@@ -37,6 +38,11 @@ const formatDate = (value: FuelLog["date"]): string => {
 
 const formatDecimal = (value: FuelLog["liters"]): string => {
   return String(value);
+};
+
+const fuelTypeLabels: Record<FuelType, string> = {
+  DIESEL: "\u062F\u064A\u0632\u0644",
+  GASOLINE: "\u0628\u0646\u0632\u064A\u0646",
 };
 
 export function exportFuelLogsToExcel(
@@ -69,6 +75,8 @@ export function exportFuelLogsToExcel(
         "\u0631\u0642\u0645 \u0627\u0644\u0645\u0631\u0643\u0628\u0629",
         "\u0631\u0642\u0645 \u0627\u0644\u0645\u0642\u0637\u0648\u0631\u0629",
         "\u0646\u0648\u0639 \u0627\u0644\u0634\u0627\u062D\u0646\u0629",
+        "\u0627\u0644\u0645\u062D\u0637\u0629",
+        "\u0646\u0648\u0639 \u0627\u0644\u0648\u0642\u0648\u062F",
         "\u0643\u0648\u062F \u0627\u0644\u0633\u0627\u0626\u0642",
       ],
       ...fuelLogs.map((log, index) => [
@@ -79,6 +87,8 @@ export function exportFuelLogsToExcel(
         log.vehicle?.plates_number ?? "",
         log.vehicle?.trailer_plates ?? "",
         log.vehicle?.truck_type ?? "",
+        log.station?.name ?? "",
+        fuelTypeLabels[log.fuel_type],
         log.driver?.code ?? "",
       ]),
     ];
