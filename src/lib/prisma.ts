@@ -3,17 +3,15 @@ import { PrismaClient } from "../generated/prisma/client";
 
 const createPrismaClient = () => {
   const connectionString = process.env.DATABASE_URL;
+  const options: ConstructorParameters<typeof PrismaClient>[0] = {
+    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+  };
 
-  if (!connectionString) {
-    throw new Error("Missing environment variable: DATABASE_URL");
+  if (connectionString) {
+    options.adapter = new PrismaNeon({ connectionString });
   }
 
-  const adapter = new PrismaNeon({ connectionString });
-
-  return new PrismaClient({
-    adapter,
-    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
-  });
+  return new PrismaClient(options);
 };
 
 type PrismaClientSingleton = ReturnType<typeof createPrismaClient>;
