@@ -1,6 +1,9 @@
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../generated/prisma/client";
 
+export const isDatabaseConfigured = (): boolean =>
+  Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim());
+
 const createPrismaClient = (): PrismaClient => {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {

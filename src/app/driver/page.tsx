@@ -19,12 +19,15 @@ import type {
   FuelFillVehicleOption,
 } from "../../features/driver/types";
 import { DriverStatus, FuelLogStatus } from "../../generated/prisma/client";
-import { getPrisma } from "../../lib/prisma";
+import SystemStatusCard from "../../components/SystemStatusCard";
+import { getPrisma, isDatabaseConfigured } from "../../lib/prisma";
 import { formatScheduleWindow, getStationRuntimeStatus, weekdayLabels } from "../../lib/station-status";
 
 export const dynamic = "force-dynamic";
 
 const MOCK_DRIVER_CODE = "DRV-001";
+const pageBackground =
+  "min-h-screen bg-[radial-gradient(circle_at_top,rgba(214,211,209,0.16),transparent_22%),radial-gradient(circle_at_bottom_left,rgba(115,115,115,0.14),transparent_32%),linear-gradient(140deg,#050816_0%,#111827_42%,#1f2937_100%)]";
 
 const parseNumber = (value: string | number): number => {
   const parsed = Number(value);
@@ -49,38 +52,24 @@ const formatDate = (value: Date | string): string => {
 };
 
 export default async function DriverPage() {
-  const prisma = getPrisma();
+  if (!isDatabaseConfigured()) {
+    return (
+      <main className={pageBackground}>
+        <SystemStatusCard
+          title="بوابة السائق غير مهيأة بعد"
+          description="البوابة تحتاج اتصالًا بقاعدة البيانات، لكن متغير DATABASE_URL غير موجود داخل إعدادات الاستضافة."
+          details="أضف DATABASE_URL في Cloudflare Pages ثم أعد النشر."
+        />
+      </main>
+    );
+  }
 
-  const requestedDriver = await prisma.driver.findFirst({
-    where: {
-      code: MOCK_DRIVER_CODE,
-      deleted_at: null,
-      status: {
-        not: DriverStatus.DELETED,
-      },
-    },
-    include: {
-      vehicles: {
-        where: {
-          is_active: true,
-        },
-        orderBy: {
-          id: "asc",
-        },
-      },
-      _count: {
-        select: {
-          vehicles: true,
-          fuel_logs: true,
-        },
-      },
-    },
-  });
+  try {
+    const prisma = getPrisma();
 
-  const fallbackDriver =
-    requestedDriver ??
-    (await prisma.driver.findFirst({
+    const requestedDriver = await prisma.driver.findFirst({
       where: {
+        code: MOCK_DRIVER_CODE,
         deleted_at: null,
         status: {
           not: DriverStatus.DELETED,
@@ -102,279 +91,319 @@ export default async function DriverPage() {
           },
         },
       },
-      orderBy: {
-        id: "asc",
-      },
-    }));
-
-  const driver = fallbackDriver;
-
-  const [recentFuelLogs, litersAggregate, vehicleAggregates, stations] = driver
-    ? await Promise.all([
-        prisma.fuelLog.findMany({
-          where: {
-            driverId: driver.id,
-          },
-          include: {
-            station: {
-              select: {
-                name: true,
-              },
-            },
-            vehicle: {
-              select: {
-                plates_number: true,
-              },
-            },
-          },
-          orderBy: {
-            date: "desc",
-          },
-          take: 8,
-        }),
-        prisma.fuelLog.aggregate({
-          where: {
-            driverId: driver.id,
-            status: FuelLogStatus.APPROVED,
-          },
-          _sum: {
-            liters: true,
-          },
-        }),
-        prisma.fuelLog.groupBy({
-          by: ["vehicleId"],
-          where: {
-            driverId: driver.id,
-            status: FuelLogStatus.APPROVED,
-          },
-          _sum: {
-            liters: true,
-          },
-          _count: {
-            _all: true,
-          },
-        }),
-        prisma.station.findMany({
-          include: {
-            schedules: {
-              where: {
-                is_enabled: true,
-              },
-              orderBy: {
-                day_of_week: "asc",
-              },
-            },
-            _count: {
-              select: {
-                fuel_logs: true,
-              },
-            },
-          },
-          orderBy: [
-            {
-              is_active: "desc",
-            },
-            {
-              name: "asc",
-            },
-          ],
-        }),
-      ])
-    : [[], null, [], []];
-
-  const totalFilledLiters = litersAggregate?._sum.liters ? Number(litersAggregate._sum.liters) : 0;
-  const vehicleAggregateMap = new Map(
-    vehicleAggregates.map((vehicle) => [
-      vehicle.vehicleId,
-      {
-        totalLiters: Number(vehicle._sum.liters ?? 0),
-        totalLogs: vehicle._count._all,
-      },
-    ]),
-  );
-
-  const stationSummaries: DriverStationSummary[] = stations.map((station) => ({
-    id: station.id,
-    name: station.name,
-    location: station.location,
-    isActive: station.is_active,
-    runtimeStatus: getStationRuntimeStatus(station),
-    scheduleSummary: station.schedules.map((schedule) =>
-      `${weekdayLabels[schedule.day_of_week]} ${formatScheduleWindow(schedule.opens_at, schedule.closes_at)}`,
-    ),
-  }));
-
-  const vehicleSummaries: DriverVehicleSummary[] =
-    driver?.vehicles.map((vehicle) => {
-      const aggregate = vehicleAggregateMap.get(vehicle.id);
-
-      return {
-        id: vehicle.id,
-        truckType: vehicle.truck_type,
-        platesNumber: vehicle.plates_number,
-        trailerPlates: vehicle.trailer_plates,
-        imageUrl: vehicle.image_url,
-        totalLiters: aggregate?.totalLiters ?? 0,
-        totalLogs: aggregate?.totalLogs ?? 0,
-      };
-    }) ?? [];
-
-  const fuelVehicles: FuelFillVehicleOption[] = vehicleSummaries.map((vehicle) => ({
-    id: vehicle.id,
-    truckType: vehicle.truckType,
-    platesNumber: vehicle.platesNumber,
-    trailerPlates: vehicle.trailerPlates,
-  }));
-
-  const fuelStations: FuelFillStationOption[] = stationSummaries.map((station) => ({
-    id: station.id,
-    name: station.name,
-    location: station.location,
-    runtimeStatus: station.runtimeStatus,
-  }));
-
-  const recentFuelHistory: DriverFuelHistoryItem[] = recentFuelLogs.map((log) => ({
-    id: log.id,
-    liters: Number(log.liters),
-    fuelType: log.fuel_type,
-    status: log.status,
-    date: formatDate(log.date),
-    stationName: log.station?.name,
-    vehiclePlates: log.vehicle.plates_number,
-  }));
-
-  async function handleAddVehicle(payload: AddVehiclePayload): Promise<ActionResult> {
-    "use server";
-
-    if (!driver) {
-      return {
-        success: false,
-        error: "No driver record is available for this mock session.",
-      };
-    }
-
-    const prisma = getPrisma();
-    const truckType = payload.truckType.trim();
-    const platesNumber = payload.platesNumber.trim();
-    const trailerPlates = payload.trailerPlates.trim();
-    const imageUrl = payload.imageUrl.trim();
-    const truckVolume = parseNumber(payload.truckVolume);
-
-    if (!truckType || !platesNumber || truckVolume <= 0) {
-      return {
-        success: false,
-        error: "Truck type, plates, and a valid truck volume are required.",
-      };
-    }
-
-    try {
-      await prisma.vehicle.create({
-        data: {
-          driverId: driver.id,
-          truck_type: truckType,
-          plates_number: platesNumber,
-          trailer_plates: trailerPlates || null,
-          truck_volume: truckVolume,
-          image_url: imageUrl || null,
-        },
-      });
-
-      revalidatePath("/driver");
-
-      return {
-        success: true,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unable to add vehicle.",
-      };
-    }
-  }
-
-  async function handleFuelFill(payload: FuelFillPayload): Promise<ActionResult> {
-    "use server";
-
-    if (!driver) {
-      return {
-        success: false,
-        error: "No driver record is available for this mock session.",
-      };
-    }
-
-    const result = await logFuelEntry({
-      driverId: driver.id,
-      vehicleId: payload.vehicleId,
-      stationId: payload.stationId,
-      liters: payload.liters,
-      fuel_type: payload.fuelType,
-      status: FuelLogStatus.APPROVED,
     });
 
-    if (result.success) {
-      revalidatePath("/driver");
-      revalidatePath("/admin");
+    const fallbackDriver =
+      requestedDriver ??
+      (await prisma.driver.findFirst({
+        where: {
+          deleted_at: null,
+          status: {
+            not: DriverStatus.DELETED,
+          },
+        },
+        include: {
+          vehicles: {
+            where: {
+              is_active: true,
+            },
+            orderBy: {
+              id: "asc",
+            },
+          },
+          _count: {
+            select: {
+              vehicles: true,
+              fuel_logs: true,
+            },
+          },
+        },
+        orderBy: {
+          id: "asc",
+        },
+      }));
+
+    const driver = fallbackDriver;
+
+    const [recentFuelLogs, litersAggregate, vehicleAggregates, stations] = driver
+      ? await Promise.all([
+          prisma.fuelLog.findMany({
+            where: {
+              driverId: driver.id,
+            },
+            include: {
+              station: {
+                select: {
+                  name: true,
+                },
+              },
+              vehicle: {
+                select: {
+                  plates_number: true,
+                },
+              },
+            },
+            orderBy: {
+              date: "desc",
+            },
+            take: 8,
+          }),
+          prisma.fuelLog.aggregate({
+            where: {
+              driverId: driver.id,
+              status: FuelLogStatus.APPROVED,
+            },
+            _sum: {
+              liters: true,
+            },
+          }),
+          prisma.fuelLog.groupBy({
+            by: ["vehicleId"],
+            where: {
+              driverId: driver.id,
+              status: FuelLogStatus.APPROVED,
+            },
+            _sum: {
+              liters: true,
+            },
+            _count: {
+              _all: true,
+            },
+          }),
+          prisma.station.findMany({
+            include: {
+              schedules: {
+                where: {
+                  is_enabled: true,
+                },
+                orderBy: {
+                  day_of_week: "asc",
+                },
+              },
+              _count: {
+                select: {
+                  fuel_logs: true,
+                },
+              },
+            },
+            orderBy: [
+              {
+                is_active: "desc",
+              },
+              {
+                name: "asc",
+              },
+            ],
+          }),
+        ])
+      : [[], null, [], []];
+
+    const totalFilledLiters = litersAggregate?._sum.liters ? Number(litersAggregate._sum.liters) : 0;
+    const vehicleAggregateMap = new Map(
+      vehicleAggregates.map((vehicle) => [
+        vehicle.vehicleId,
+        {
+          totalLiters: Number(vehicle._sum.liters ?? 0),
+          totalLogs: vehicle._count._all,
+        },
+      ]),
+    );
+
+    const stationSummaries: DriverStationSummary[] = stations.map((station) => ({
+      id: station.id,
+      name: station.name,
+      location: station.location,
+      isActive: station.is_active,
+      runtimeStatus: getStationRuntimeStatus(station),
+      scheduleSummary: station.schedules.map((schedule) =>
+        `${weekdayLabels[schedule.day_of_week]} ${formatScheduleWindow(schedule.opens_at, schedule.closes_at)}`,
+      ),
+    }));
+
+    const vehicleSummaries: DriverVehicleSummary[] =
+      driver?.vehicles.map((vehicle) => {
+        const aggregate = vehicleAggregateMap.get(vehicle.id);
+
+        return {
+          id: vehicle.id,
+          truckType: vehicle.truck_type,
+          platesNumber: vehicle.plates_number,
+          trailerPlates: vehicle.trailer_plates,
+          imageUrl: vehicle.image_url,
+          totalLiters: aggregate?.totalLiters ?? 0,
+          totalLogs: aggregate?.totalLogs ?? 0,
+        };
+      }) ?? [];
+
+    const fuelVehicles: FuelFillVehicleOption[] = vehicleSummaries.map((vehicle) => ({
+      id: vehicle.id,
+      truckType: vehicle.truckType,
+      platesNumber: vehicle.platesNumber,
+      trailerPlates: vehicle.trailerPlates,
+    }));
+
+    const fuelStations: FuelFillStationOption[] = stationSummaries.map((station) => ({
+      id: station.id,
+      name: station.name,
+      location: station.location,
+      runtimeStatus: station.runtimeStatus,
+    }));
+
+    const recentFuelHistory: DriverFuelHistoryItem[] = recentFuelLogs.map((log) => ({
+      id: log.id,
+      liters: Number(log.liters),
+      fuelType: log.fuel_type,
+      status: log.status,
+      date: formatDate(log.date),
+      stationName: log.station?.name,
+      vehiclePlates: log.vehicle.plates_number,
+    }));
+
+    async function handleAddVehicle(payload: AddVehiclePayload): Promise<ActionResult> {
+      "use server";
+
+      if (!driver) {
+        return {
+          success: false,
+          error: "No driver record is available for this mock session.",
+        };
+      }
+
+      const prisma = getPrisma();
+      const truckType = payload.truckType.trim();
+      const platesNumber = payload.platesNumber.trim();
+      const trailerPlates = payload.trailerPlates.trim();
+      const imageUrl = payload.imageUrl.trim();
+      const truckVolume = parseNumber(payload.truckVolume);
+
+      if (!truckType || !platesNumber || truckVolume <= 0) {
+        return {
+          success: false,
+          error: "Truck type, plates, and a valid truck volume are required.",
+        };
+      }
+
+      try {
+        await prisma.vehicle.create({
+          data: {
+            driverId: driver.id,
+            truck_type: truckType,
+            plates_number: platesNumber,
+            trailer_plates: trailerPlates || null,
+            truck_volume: truckVolume,
+            image_url: imageUrl || null,
+          },
+        });
+
+        revalidatePath("/driver");
+
+        return {
+          success: true,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Unable to add vehicle.",
+        };
+      }
     }
 
-    return {
-      success: result.success,
-      error: result.error,
-    };
-  }
+    async function handleFuelFill(payload: FuelFillPayload): Promise<ActionResult> {
+      "use server";
 
-  async function handleDeleteAccount(): Promise<ActionResult> {
-    "use server";
+      if (!driver) {
+        return {
+          success: false,
+          error: "No driver record is available for this mock session.",
+        };
+      }
 
-    if (!driver) {
+      const result = await logFuelEntry({
+        driverId: driver.id,
+        vehicleId: payload.vehicleId,
+        stationId: payload.stationId,
+        liters: payload.liters,
+        fuel_type: payload.fuelType,
+        status: FuelLogStatus.APPROVED,
+      });
+
+      if (result.success) {
+        revalidatePath("/driver");
+        revalidatePath("/admin");
+      }
+
       return {
-        success: false,
-        error: "No driver record is available for this mock session.",
+        success: result.success,
+        error: result.error,
       };
     }
 
-    const result = await deleteDriverAccount(driver.id);
+    async function handleDeleteAccount(): Promise<ActionResult> {
+      "use server";
 
-    if (result.success) {
-      revalidatePath("/driver");
-      revalidatePath("/admin");
+      if (!driver) {
+        return {
+          success: false,
+          error: "No driver record is available for this mock session.",
+        };
+      }
+
+      const result = await deleteDriverAccount(driver.id);
+
+      if (result.success) {
+        revalidatePath("/driver");
+        revalidatePath("/admin");
+      }
+
+      return {
+        success: result.success,
+        error: result.error,
+      };
     }
 
-    return {
-      success: result.success,
-      error: result.error,
+    const dashboardDriver = {
+      fullName: driver?.full_name ?? "Demo Driver",
+      code: driver?.code ?? MOCK_DRIVER_CODE,
+      totalFilledLiters,
+      totalFuelLogs: driver?._count.fuel_logs ?? 0,
+      vehicleCount: driver?._count.vehicles ?? 0,
+      activeStationCount: stationSummaries.filter((station) => station.runtimeStatus === "OPEN").length,
+      accountStatus: driver?.status ?? DriverStatus.ACTIVE,
     };
+
+    return (
+      <main className={pageBackground}>
+        <DriverDashboard
+          driver={dashboardDriver}
+          navigationItems={[
+            { id: "fuel-fill", label: "Fuel Confirmation" },
+            { id: "stations", label: "Stations" },
+            { id: "fleet", label: "My Fleet" },
+            { id: "account", label: "Account" },
+          ]}
+          activeNavId="fuel-fill"
+        >
+          <div className="space-y-4 pb-6">
+            <FuelFillForm vehicles={fuelVehicles} stations={fuelStations} onSubmit={handleFuelFill} />
+            <DriverStationsBoard stations={stationSummaries} />
+            <DriverVehicleStats vehicles={vehicleSummaries} recentFuelLogs={recentFuelHistory} />
+            <AddVehicleForm existingVehicles={vehicleSummaries} onSubmit={handleAddVehicle} />
+            <DriverDangerZone onDeleteAccount={handleDeleteAccount} />
+          </div>
+        </DriverDashboard>
+      </main>
+    );
+  } catch (error) {
+    const details = error instanceof Error ? error.message : "Unexpected server error.";
+
+    return (
+      <main className={pageBackground}>
+        <SystemStatusCard
+          title="تعذر تحميل بوابة السائق"
+          description="حدث خطأ أثناء تحميل بيانات السائق أو المحطات. غالبًا الاتصال بقاعدة البيانات غير متاح داخل الاستضافة."
+          details={details}
+        />
+      </main>
+    );
   }
-
-  const dashboardDriver = {
-    fullName: driver?.full_name ?? "Demo Driver",
-    code: driver?.code ?? MOCK_DRIVER_CODE,
-    totalFilledLiters,
-    totalFuelLogs: driver?._count.fuel_logs ?? 0,
-    vehicleCount: driver?._count.vehicles ?? 0,
-    activeStationCount: stationSummaries.filter((station) => station.runtimeStatus === "OPEN").length,
-    accountStatus: driver?.status ?? DriverStatus.ACTIVE,
-  };
-
-  return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(214,211,209,0.16),transparent_22%),radial-gradient(circle_at_bottom_left,rgba(115,115,115,0.14),transparent_32%),linear-gradient(140deg,#050816_0%,#111827_42%,#1f2937_100%)]">
-      <DriverDashboard
-        driver={dashboardDriver}
-        navigationItems={[
-          { id: "fuel-fill", label: "Fuel Confirmation" },
-          { id: "stations", label: "Stations" },
-          { id: "fleet", label: "My Fleet" },
-          { id: "account", label: "Account" },
-        ]}
-        activeNavId="fuel-fill"
-      >
-        <div className="space-y-4 pb-6">
-          <FuelFillForm vehicles={fuelVehicles} stations={fuelStations} onSubmit={handleFuelFill} />
-          <DriverStationsBoard stations={stationSummaries} />
-          <DriverVehicleStats vehicles={vehicleSummaries} recentFuelLogs={recentFuelHistory} />
-          <AddVehicleForm existingVehicles={vehicleSummaries} onSubmit={handleAddVehicle} />
-          <DriverDangerZone onDeleteAccount={handleDeleteAccount} />
-        </div>
-      </DriverDashboard>
-    </main>
-  );
 }

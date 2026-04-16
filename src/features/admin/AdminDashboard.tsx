@@ -36,28 +36,37 @@ export default function AdminDashboard({
   children,
 }: AdminDashboardProps) {
   const [totalLogsToday, setTotalLogsToday] = useState(initialTotalLogsToday);
-  const [lastRealtimeMessage, setLastRealtimeMessage] = useState("Live monitoring is ready.");
+  const [lastRealtimeMessage, setLastRealtimeMessage] = useState("Checking realtime channel.");
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
 
   useEffect(() => {
-    const pusher = getPusherClient();
-    const channel = pusher.subscribe("admin-dashboard");
+    try {
+      const pusher = getPusherClient();
+      const channel = pusher.subscribe("admin-dashboard");
 
-    const handleNewFuelLog = (payload: AdminRealtimeFuelLog) => {
-      if (isSameLocalDay(payload.date, new Date())) {
-        setTotalLogsToday((current) => current + 1);
-      }
+      setIsRealtimeConnected(true);
+      setLastRealtimeMessage("Live monitoring is ready.");
 
-      const driverLabel = payload.driver?.full_name || payload.driver?.code || "driver";
-      setLastRealtimeMessage(`Latest fill confirmed for ${driverLabel}.`);
-      onRealtimeLog?.(payload);
-    };
+      const handleNewFuelLog = (payload: AdminRealtimeFuelLog) => {
+        if (isSameLocalDay(payload.date, new Date())) {
+          setTotalLogsToday((current) => current + 1);
+        }
 
-    channel.bind("new-fuel-log", handleNewFuelLog);
+        const driverLabel = payload.driver?.full_name || payload.driver?.code || "driver";
+        setLastRealtimeMessage(`Latest fill confirmed for ${driverLabel}.`);
+        onRealtimeLog?.(payload);
+      };
 
-    return () => {
-      channel.unbind("new-fuel-log", handleNewFuelLog);
-      pusher.unsubscribe("admin-dashboard");
-    };
+      channel.bind("new-fuel-log", handleNewFuelLog);
+
+      return () => {
+        channel.unbind("new-fuel-log", handleNewFuelLog);
+        pusher.unsubscribe("admin-dashboard");
+      };
+    } catch {
+      setIsRealtimeConnected(false);
+      setLastRealtimeMessage("Realtime feed unavailable. Check Pusher settings.");
+    }
   }, [onRealtimeLog]);
 
   return (
@@ -74,7 +83,9 @@ export default function AdminDashboard({
             </div>
 
             <div className="rounded-full border border-white/20 bg-black/30 px-4 py-2">
-              <span className="text-sm font-black text-white">Realtime Connected</span>
+              <span className="text-sm font-black text-white">
+                {isRealtimeConnected ? "Realtime Connected" : "Realtime Offline"}
+              </span>
             </div>
           </div>
 
