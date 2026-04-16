@@ -1,7 +1,7 @@
 "use server";
 
 import { Prisma, type Driver, type Vehicle } from "../generated/prisma/client";
-import prisma from "../lib/prisma";
+import { getPrisma } from "../lib/prisma";
 
 type ActionResponse<T> = {
   success: boolean;
@@ -62,6 +62,7 @@ export async function registerDriverWithVehicle(
   input: RegisterDriverInput,
 ): Promise<ActionResponse<{ driver: Driver; vehicle: Vehicle }>> {
   try {
+    const prisma = getPrisma();
     const driverData = {
       code: trimText(input.driver.code),
       full_name: trimText(input.driver.full_name),
@@ -143,6 +144,7 @@ export async function getDriverDashboardStatsByCode(
   code: Driver["code"],
 ): Promise<ActionResponse<DriverDashboardStats>> {
   try {
+    const prisma = getPrisma();
     const normalizedCode = trimText(code);
 
     if (!normalizedCode) {

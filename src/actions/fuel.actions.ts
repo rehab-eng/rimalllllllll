@@ -1,7 +1,7 @@
 "use server";
 
 import { FuelLogStatus, Prisma } from "../generated/prisma/client";
-import prisma from "../lib/prisma";
+import { getPrisma } from "../lib/prisma";
 import { getPusherServer } from "../lib/pusher";
 
 type ActionResponse<T> = {
@@ -60,6 +60,7 @@ export async function logFuelEntry(
   input: CreateFuelLogInput,
 ): Promise<ActionResponse<FuelLogWithRelations>> {
   try {
+    const prisma = getPrisma();
     if (!Number.isInteger(input.driverId) || input.driverId <= 0) {
       return {
         success: false,

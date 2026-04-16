@@ -1,13 +1,14 @@
 import AdminDashboard from "../../features/admin/AdminDashboard";
 import AdminDataTable from "../../features/admin/AdminDataTable";
 import type { AdminFuelLogRow } from "../../features/admin/types";
-import prisma from "../../lib/prisma";
+import { getPrisma } from "../../lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 const serializeForClient = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 export default async function AdminPage() {
+  const prisma = getPrisma();
   const now = new Date();
   const startOfDay = new Date(now);
   startOfDay.setHours(0, 0, 0, 0);

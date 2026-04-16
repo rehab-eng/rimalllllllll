@@ -11,7 +11,7 @@ import type {
   FuelFillVehicleOption,
 } from "../../features/driver/types";
 import { logFuelEntry } from "../../actions/fuel.actions";
-import prisma from "../../lib/prisma";
+import { getPrisma } from "../../lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +24,7 @@ const parseNumber = (value: string | number): number => {
 };
 
 export default async function DriverPage() {
+  const prisma = getPrisma();
   const requestedDriver = await prisma.driver.findUnique({
     where: {
       code: MOCK_DRIVER_CODE,
@@ -93,6 +94,7 @@ export default async function DriverPage() {
 
   async function handleAddVehicle(payload: AddVehiclePayload): Promise<ActionResult> {
     "use server";
+    const prisma = getPrisma();
 
     if (!driver) {
       return {
