@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum FuelLogStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Driver {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique @db.VarChar(50)
+  full_name   String    @db.VarChar(150)
+  national_id String    @db.VarChar(50)
+  phone       String    @db.VarChar(32)
+  license_url String    @db.Text
+  vehicles    Vehicle[]
+  fuel_logs   FuelLog[]
+}
+
+model Vehicle {
+  id             Int       @id @default(autoincrement())
+  driverId       Int
+  truck_type     String    @db.VarChar(100)
+  plates_number  String    @db.VarChar(50)
+  trailer_plates String?   @db.VarChar(50)
+  truck_volume   Decimal   @db.Decimal(10, 2)
+  image_url      String    @db.Text
+  driver         Driver    @relation(fields: [driverId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  fuel_logs      FuelLog[]
+
+  @@index([driverId])
+}
+
+model FuelLog {
+  id        Int           @id @default(autoincrement())
+  driverId  Int
+  vehicleId Int
+  liters    Decimal       @db.Decimal(10, 2)
+  date      DateTime      @default(now())
+  status    FuelLogStatus @default(PENDING)
+  driver    Driver        @relation(fields: [driverId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  vehicle   Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([driverId])
+  @@index([vehicleId])
+  @@index([driverId, date])
+}
