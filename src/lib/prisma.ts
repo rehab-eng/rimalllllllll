@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 
 type CloudflareEnv = {
   DIRECT_URL?: string;
@@ -6,7 +6,12 @@ type CloudflareEnv = {
   DATABASE_URL?: string;
 };
 
-export type SqlClient = ReturnType<typeof neon>;
+type TypedSqlTag = <T = Record<string, any>[]>(
+  strings: TemplateStringsArray,
+  ...params: any[]
+) => Promise<T>;
+
+export type SqlClient = TypedSqlTag & NeonQueryFunction<false, false>;
 
 const normalizeConnectionString = (value: string | undefined): string | undefined => {
   const normalized = value?.trim();
@@ -50,7 +55,10 @@ const createSqlClient = async (): Promise<SqlClient> => {
     );
   }
 
-  return neon(connectionString);
+  return neon(connectionString, {
+    arrayMode: false,
+    fullResults: false,
+  }) as SqlClient;
 };
 
 const globalForSql = globalThis as typeof globalThis & {
