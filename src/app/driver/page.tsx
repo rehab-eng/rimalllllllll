@@ -29,6 +29,7 @@ import {
 } from "../../lib/station-status";
 
 export const dynamic = "force-dynamic";
+// force cloudflare update
 
 const MOCK_DRIVER_CODE = "DRV-001";
 const pageBackground =
@@ -390,14 +391,9 @@ export default async function DriverPage() {
     const details = error instanceof Error ? error.message : String(error);
 
     return (
-      <main style={{ minHeight: "100vh", background: "#111", color: "#fff", padding: "16px" }}>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "12px" }}>
-          Driver Page Runtime Error
-        </h1>
-        <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "14px" }}>
-          {details}
-        </pre>
-      </main>
+      <div style={{ padding: "20px", color: "red", fontSize: "20px" }}>
+        {details}
+      </div>
     );
   }
 }

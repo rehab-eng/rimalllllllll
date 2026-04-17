@@ -20,6 +20,7 @@ import { getPrisma, isDatabaseConfigured } from "../../lib/prisma";
 import { getStationRuntimeStatus } from "../../lib/station-status";
 
 export const dynamic = "force-dynamic";
+// force cloudflare update
 
 const serializeForClient = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const pageBackground =
@@ -317,14 +318,9 @@ export default async function AdminPage() {
     const details = error instanceof Error ? error.message : String(error);
 
     return (
-      <main style={{ minHeight: "100vh", background: "#111", color: "#fff", padding: "16px" }}>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "12px" }}>
-          Admin Page Runtime Error
-        </h1>
-        <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "14px" }}>
-          {details}
-        </pre>
-      </main>
+      <div style={{ padding: "20px", color: "red", fontSize: "20px" }}>
+        {details}
+      </div>
     );
   }
 }
