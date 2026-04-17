@@ -8,9 +8,9 @@
  *
  * 🟢 You can import this file directly.
  */
-export type * from './models/Driver'
-export type * from './models/Vehicle'
-export type * from './models/Station'
-export type * from './models/StationSchedule'
-export type * from './models/FuelLog'
-export type * from './commonInputTypes'
+export type * from './models/Driver.ts'
+export type * from './models/Vehicle.ts'
+export type * from './models/Station.ts'
+export type * from './models/StationSchedule.ts'
+export type * from './models/FuelLog.ts'
+export type * from './commonInputTypes.ts'
