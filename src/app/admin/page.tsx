@@ -1,5 +1,4 @@
 import { revalidatePath } from "next/cache";
-import { connection } from "next/server";
 
 import SystemStatusCard from "../../components/SystemStatusCard";
 import { deleteDriverAccount, updateDriverStatus } from "../../actions/driver.actions";
@@ -27,8 +26,6 @@ const pageBackground =
   "min-h-screen bg-[radial-gradient(circle_at_top,rgba(245,245,244,0.14),transparent_22%),radial-gradient(circle_at_bottom_left,rgba(82,82,91,0.16),transparent_30%),linear-gradient(135deg,#030712_0%,#111827_45%,#1f2937_100%)]";
 
 export default async function AdminPage() {
-  await connection();
-
   if (!isDatabaseConfigured()) {
     return (
       <main className={pageBackground}>

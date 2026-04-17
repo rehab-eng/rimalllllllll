@@ -1,5 +1,4 @@
 import { revalidatePath } from "next/cache";
-import { connection } from "next/server";
 
 import SystemStatusCard from "../../components/SystemStatusCard";
 import { deleteDriverAccount } from "../../actions/driver.actions";
@@ -42,8 +41,6 @@ const parseNumber = (value: string | number): number => {
 };
 
 export default async function DriverPage() {
-  await connection();
-
   if (!isDatabaseConfigured()) {
     return (
       <main className={pageBackground}>
