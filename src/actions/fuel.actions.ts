@@ -70,7 +70,7 @@ export async function logFuelEntry(
   input: CreateFuelLogInput,
 ): Promise<ActionResponse<FuelLogWithRelations>> {
   try {
-    const prisma = getPrisma();
+    const prisma = await getPrisma();
 
     if (!Number.isInteger(input.driverId) || input.driverId <= 0) {
       return {

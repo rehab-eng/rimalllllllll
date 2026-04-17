@@ -1,20 +1,10 @@
-import { cache } from "react";
-import { PrismaNeon } from "@prisma/adapter-neon";
-import { PrismaClient } from "../generated/prisma/client";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-
-// Ensure Cloudflare bundling keeps Prisma query compiler runtime modules.
-import "@prisma/client/runtime/query_compiler_fast_bg.postgresql.mjs";
-import "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.mjs";
-
 type CloudflareEnv = {
   DIRECT_URL?: string;
   DIRECT_DATABASE_URL?: string;
   DATABASE_URL?: string;
 };
 
-export const isDatabaseConfigured = (): boolean =>
-  Boolean(getDatabaseUrl());
+type PrismaClientSingleton = import("../generated/prisma/client").PrismaClient;
 
 const normalizeConnectionString = (value: string | undefined): string | undefined => {
   const normalized = value?.trim();
@@ -32,33 +22,42 @@ const getProcessEnvDatabaseUrl = (): string | undefined =>
   normalizeConnectionString(process.env.DIRECT_DATABASE_URL) ??
   normalizeConnectionString(process.env.DATABASE_URL);
 
-const getCloudflareEnvDatabaseUrl = (): string | undefined => {
+const getCloudflareEnvDatabaseUrl = async (): Promise<string | undefined> => {
   try {
+    // Lazy import: avoid crashing module evaluation before request handling.
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     const cloudflareEnv = getCloudflareContext().env as CloudflareEnv;
+
     return (
       normalizeConnectionString(cloudflareEnv.DIRECT_URL) ??
       normalizeConnectionString(cloudflareEnv.DIRECT_DATABASE_URL) ??
       normalizeConnectionString(cloudflareEnv.DATABASE_URL)
     );
   } catch {
-    // Not running inside Cloudflare runtime context.
+    // Not running in Cloudflare runtime context (or package unavailable).
     return undefined;
   }
 };
 
-const getDatabaseUrl = (): string | undefined => {
-  return getProcessEnvDatabaseUrl() ?? getCloudflareEnvDatabaseUrl();
+const getDatabaseUrl = async (): Promise<string | undefined> => {
+  return getProcessEnvDatabaseUrl() ?? (await getCloudflareEnvDatabaseUrl());
 };
 
-const createPrismaClient = (): PrismaClient => {
-  const connectionString = getDatabaseUrl();
+export const isDatabaseConfigured = (): boolean => Boolean(getProcessEnvDatabaseUrl());
+
+const createPrismaClient = async (): Promise<PrismaClientSingleton> => {
+  const connectionString = await getDatabaseUrl();
   if (!connectionString) {
     throw new Error(
-      "Missing environment variable: DATABASE_URL (or DIRECT_DATABASE_URL)",
+      "Missing environment variable: DATABASE_URL (or DIRECT_DATABASE_URL / DIRECT_URL)",
     );
   }
 
-  // Keep connection reuse low for Cloudflare Workers isolates.
+  const [{ PrismaNeon }, { PrismaClient }] = await Promise.all([
+    import("@prisma/adapter-neon"),
+    import("../generated/prisma/client"),
+  ]);
+
   const adapter = new PrismaNeon({
     connectionString,
     maxUses: 1,
@@ -70,6 +69,13 @@ const createPrismaClient = (): PrismaClient => {
   });
 };
 
-export const getPrisma = cache(() => createPrismaClient());
+const globalForPrisma = globalThis as typeof globalThis & {
+  prismaPromise: Promise<PrismaClientSingleton> | undefined;
+};
+
+export const getPrisma = async (): Promise<PrismaClientSingleton> => {
+  globalForPrisma.prismaPromise ??= createPrismaClient();
+  return globalForPrisma.prismaPromise;
+};
 
 export default getPrisma;

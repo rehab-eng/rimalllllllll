@@ -55,7 +55,7 @@ export default async function DriverPage() {
   }
 
   try {
-    const prisma = getPrisma();
+    const prisma = await getPrisma();
 
     const requestedDriver = await prisma.driver.findFirst({
       where: {
@@ -262,7 +262,7 @@ export default async function DriverPage() {
         };
       }
 
-      const prisma = getPrisma();
+      const prisma = await getPrisma();
       const truckType = payload.truckType.trim();
       const platesNumber = payload.platesNumber.trim();
       const trailerPlates = payload.trailerPlates.trim();

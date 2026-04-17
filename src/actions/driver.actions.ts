@@ -129,7 +129,7 @@ export async function registerDriverWithVehicle(
   input: RegisterDriverInput,
 ): Promise<ActionResponse<{ driver: Driver; vehicle: Vehicle }>> {
   try {
-    const prisma = getPrisma();
+    const prisma = await getPrisma();
 
     const driverData = {
       code: trimText(input.driver.code) || generateDriverCode(),
@@ -213,7 +213,7 @@ export async function getDriverDashboardStatsByCode(
   code: Driver["code"],
 ): Promise<ActionResponse<DriverDashboardStats>> {
   try {
-    const prisma = getPrisma();
+    const prisma = await getPrisma();
     const normalizedCode = trimText(code);
 
     if (!normalizedCode) {
@@ -287,7 +287,7 @@ export async function updateDriverStatus(
   status: DriverStatus,
 ): Promise<ActionResponse<{ id: number; status: DriverStatus }>> {
   try {
-    const prisma = getPrisma();
+    const prisma = await getPrisma();
 
     const driver = await prisma.driver.update({
       where: {
@@ -319,7 +319,7 @@ export async function deleteDriverAccount(
   driverId: Driver["id"],
 ): Promise<ActionResponse<{ id: number; deletedAt: Date | null }>> {
   try {
-    const prisma = getPrisma();
+    const prisma = await getPrisma();
 
     const driver = await prisma.driver.update({
       where: {

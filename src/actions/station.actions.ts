@@ -49,7 +49,7 @@ export async function saveStation(
   input: SaveStationInput,
 ): Promise<ActionResponse<{ id: number }>> {
   try {
-    const prisma = getPrisma();
+    const prisma = await getPrisma();
     const name = trimText(input.name);
     const location = trimText(input.location) || null;
     const schedules = input.schedules
@@ -153,7 +153,7 @@ export async function toggleStationActivity(
   isActive: boolean,
 ): Promise<ActionResponse<{ id: number; isActive: boolean }>> {
   try {
-    const prisma = getPrisma();
+    const prisma = await getPrisma();
     const station = await prisma.station.update({
       where: {
         id: stationId,

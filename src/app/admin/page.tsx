@@ -40,7 +40,7 @@ export default async function AdminPage() {
   }
 
   try {
-    const prisma = getPrisma();
+    const prisma = await getPrisma();
     const now = new Date();
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
