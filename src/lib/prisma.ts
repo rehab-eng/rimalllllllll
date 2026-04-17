@@ -8,6 +8,7 @@ import "@prisma/client/runtime/query_compiler_fast_bg.postgresql.mjs";
 import "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.mjs";
 
 type CloudflareEnv = {
+  DIRECT_URL?: string;
   DIRECT_DATABASE_URL?: string;
   DATABASE_URL?: string;
 };
@@ -27,6 +28,7 @@ const normalizeConnectionString = (value: string | undefined): string | undefine
 };
 
 const getProcessEnvDatabaseUrl = (): string | undefined =>
+  normalizeConnectionString(process.env.DIRECT_URL) ??
   normalizeConnectionString(process.env.DIRECT_DATABASE_URL) ??
   normalizeConnectionString(process.env.DATABASE_URL);
 
@@ -34,6 +36,7 @@ const getCloudflareEnvDatabaseUrl = (): string | undefined => {
   try {
     const cloudflareEnv = getCloudflareContext().env as CloudflareEnv;
     return (
+      normalizeConnectionString(cloudflareEnv.DIRECT_URL) ??
       normalizeConnectionString(cloudflareEnv.DIRECT_DATABASE_URL) ??
       normalizeConnectionString(cloudflareEnv.DATABASE_URL)
     );

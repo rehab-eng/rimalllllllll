@@ -7,5 +7,9 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+  "vars": {
+    "DATABASE_URL": "postgresql://neondb_owner:npg_PqybIod50tns@ep-bold-silence-am4ftq8f-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+    "DIRECT_DATABASE_URL": "postgresql://neondb_owner:npg_PqybIod50tns@ep-bold-silence-am4ftq8f-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
   }
 }
