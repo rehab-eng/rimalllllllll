@@ -2,12 +2,20 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "rimalllllllll",
   "main": ".open-next/worker.js",
+  "minify": true,
   "compatibility_date": "2026-04-17",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "rules": [
+    {
+      "type": "CompiledWasm",
+      "globs": ["**/*.wasm"],
+      "fallthrough": true
+    }
+  ],
   "vars": {
     "DATABASE_URL": "postgresql://neondb_owner:npg_PqybIod50tns@ep-bold-silence-am4ftq8f-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
     "DIRECT_DATABASE_URL": "postgresql://neondb_owner:npg_PqybIod50tns@ep-bold-silence-am4ftq8f-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
