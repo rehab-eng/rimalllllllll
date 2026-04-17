@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 
-import type { FuelType } from "../../generated/prisma/client";
+import type { FuelType } from "../../lib/db-types";
 import { formatArabicNumber, fuelTypeLabels, stationRuntimeStatusLabels } from "../../lib/labels";
 import type {
   ActionResult,

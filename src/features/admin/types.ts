@@ -1,28 +1,28 @@
 import type { ReactNode } from "react";
 
 import type {
-  Driver,
+  DriverRow,
   DriverStatus,
-  FuelLog,
+  FuelLogRow,
   FuelLogStatus,
   FuelType,
-  Station,
-  StationSchedule,
-  Vehicle,
-} from "../../generated/prisma/client";
+  StationRow,
+  StationScheduleRow,
+  VehicleRow,
+} from "../../lib/db-types";
 
-export type AdminRealtimeFuelLog = FuelLog & {
-  driver?: Pick<Driver, "id" | "code" | "full_name" | "phone" | "status"> | null;
-  vehicle?: Pick<Vehicle, "id" | "plates_number" | "trailer_plates" | "truck_type"> | null;
-  station?: Pick<Station, "id" | "name" | "location" | "is_active"> | null;
+export type AdminRealtimeFuelLog = FuelLogRow & {
+  driver?: Pick<DriverRow, "id" | "code" | "full_name" | "phone" | "status"> | null;
+  vehicle?: Pick<VehicleRow, "id" | "plates_number" | "trailer_plates" | "truck_type"> | null;
+  station?: Pick<StationRow, "id" | "name" | "location" | "is_active"> | null;
 };
 
-export type AdminFuelLogRow = FuelLog & {
+export type AdminFuelLogRow = FuelLogRow & {
   fuel_type: FuelType;
   status: FuelLogStatus;
-  driver: Pick<Driver, "id" | "code" | "full_name" | "phone" | "status">;
-  vehicle: Pick<Vehicle, "id" | "plates_number" | "trailer_plates" | "truck_type">;
-  station?: Pick<Station, "id" | "name" | "location" | "is_active"> | null;
+  driver: Pick<DriverRow, "id" | "code" | "full_name" | "phone" | "status">;
+  vehicle: Pick<VehicleRow, "id" | "plates_number" | "trailer_plates" | "truck_type">;
+  station?: Pick<StationRow, "id" | "name" | "location" | "is_active"> | null;
 };
 
 export type AdminDriverRow = {
@@ -37,11 +37,11 @@ export type AdminDriverRow = {
 };
 
 export type AdminStationScheduleRow = Pick<
-  StationSchedule,
+  StationScheduleRow,
   "id" | "day_of_week" | "opens_at" | "closes_at" | "is_enabled"
 >;
 
-export type AdminStationRow = Pick<Station, "id" | "name" | "location" | "is_active"> & {
+export type AdminStationRow = Pick<StationRow, "id" | "name" | "location" | "is_active"> & {
   runtimeStatus: "OPEN" | "CLOSED" | "INACTIVE";
   schedules: AdminStationScheduleRow[];
   totalLogs: number;

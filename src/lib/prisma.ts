@@ -1,10 +1,12 @@
+import { neon } from "@neondatabase/serverless";
+
 type CloudflareEnv = {
   DIRECT_URL?: string;
   DIRECT_DATABASE_URL?: string;
   DATABASE_URL?: string;
 };
 
-type PrismaClientSingleton = import("../generated/prisma/client").PrismaClient;
+export type SqlClient = ReturnType<typeof neon>;
 
 const normalizeConnectionString = (value: string | undefined): string | undefined => {
   const normalized = value?.trim();
@@ -24,7 +26,6 @@ const getProcessEnvDatabaseUrl = (): string | undefined =>
 
 const getCloudflareEnvDatabaseUrl = async (): Promise<string | undefined> => {
   try {
-    // Lazy import: avoid crashing module evaluation before request handling.
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     const cloudflareEnv = getCloudflareContext().env as CloudflareEnv;
 
@@ -34,48 +35,37 @@ const getCloudflareEnvDatabaseUrl = async (): Promise<string | undefined> => {
       normalizeConnectionString(cloudflareEnv.DATABASE_URL)
     );
   } catch {
-    // Not running in Cloudflare runtime context (or package unavailable).
     return undefined;
   }
 };
 
-const getDatabaseUrl = async (): Promise<string | undefined> => {
-  return getProcessEnvDatabaseUrl() ?? (await getCloudflareEnvDatabaseUrl());
-};
+const resolveDatabaseUrl = async (): Promise<string | undefined> =>
+  getProcessEnvDatabaseUrl() ?? (await getCloudflareEnvDatabaseUrl());
 
-export const isDatabaseConfigured = (): boolean => Boolean(getProcessEnvDatabaseUrl());
-
-const createPrismaClient = async (): Promise<PrismaClientSingleton> => {
-  const connectionString = await getDatabaseUrl();
+const createSqlClient = async (): Promise<SqlClient> => {
+  const connectionString = await resolveDatabaseUrl();
   if (!connectionString) {
     throw new Error(
       "Missing environment variable: DATABASE_URL (or DIRECT_DATABASE_URL / DIRECT_URL)",
     );
   }
 
-  const [{ PrismaNeon }, { PrismaClient }] = await Promise.all([
-    import("@prisma/adapter-neon"),
-    import("../generated/prisma/client"),
-  ]);
-
-  const adapter = new PrismaNeon({
-    connectionString,
-    maxUses: 1,
-  });
-
-  return new PrismaClient({
-    adapter,
-    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
-  });
+  return neon(connectionString);
 };
 
-const globalForPrisma = globalThis as typeof globalThis & {
-  prismaPromise: Promise<PrismaClientSingleton> | undefined;
+const globalForSql = globalThis as typeof globalThis & {
+  sqlPromise: Promise<SqlClient> | undefined;
 };
 
-export const getPrisma = async (): Promise<PrismaClientSingleton> => {
-  globalForPrisma.prismaPromise ??= createPrismaClient();
-  return globalForPrisma.prismaPromise;
+export const getSql = async (): Promise<SqlClient> => {
+  globalForSql.sqlPromise ??= createSqlClient();
+  return globalForSql.sqlPromise;
 };
 
-export default getPrisma;
+export const isDatabaseConfigured = async (): Promise<boolean> =>
+  Boolean(await resolveDatabaseUrl());
+
+// Backward-compatibility alias while migrating call sites.
+export const getPrisma = getSql;
+
+export default getSql;

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { DriverStatus, FuelType } from "../../generated/prisma/client";
+import type { DriverStatus, FuelType } from "../../lib/db-types";
 
 export type ActionResult<T = void> = {
   success: boolean;
@@ -58,7 +58,6 @@ export type AddVehiclePayload = {
   platesNumber: string;
   trailerPlates: string;
   truckVolume: number;
-  imageUrl: string;
 };
 
 export type FuelFillVehicleOption = {

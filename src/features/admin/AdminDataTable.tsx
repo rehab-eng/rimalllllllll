@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useState, useTransition } from "react";
 
-import type { FuelLogStatus } from "../../generated/prisma/client";
+import type { FuelLogStatus } from "../../lib/db-types";
 import {
   driverStatusLabels,
   formatArabicDateTime,

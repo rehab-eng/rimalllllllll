@@ -26,7 +26,6 @@ export default function AddVehicleForm({
   const [platesNumber, setPlatesNumber] = useState("");
   const [trailerPlates, setTrailerPlates] = useState("");
   const [truckVolume, setTruckVolume] = useState(volumeOptions[0] ?? 18);
-  const [imageUrl, setImageUrl] = useState("");
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -37,7 +36,6 @@ export default function AddVehicleForm({
     setPlatesNumber("");
     setTrailerPlates("");
     setTruckVolume(volumeOptions[0] ?? 18);
-    setImageUrl("");
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -58,7 +56,6 @@ export default function AddVehicleForm({
         platesNumber: platesNumber.trim(),
         trailerPlates: trailerPlates.trim(),
         truckVolume,
-        imageUrl,
       });
 
       if (!result.success) {
@@ -157,8 +154,6 @@ export default function AddVehicleForm({
             </select>
           </Field>
 
-          <ImageUpload imageUrl={imageUrl} onUpload={setImageUrl} />
-
           {feedback ? (
             <div
               className={`rounded-2xl border px-4 py-3 ${
@@ -198,40 +193,5 @@ function Field({
       <span className="text-sm font-bold text-white">{label}</span>
       {children}
     </label>
-  );
-}
-
-function ImageUpload({
-  imageUrl,
-  onUpload,
-}: {
-  imageUrl: string;
-  onUpload: (url: string) => void;
-}) {
-  const dummyUrl = `https://res.cloudinary.com/demo/image/upload/v1/rimall-vehicle-${Date.now()}.jpg`;
-
-  return (
-    <div className="rounded-[24px] border border-white/20 bg-black/25 p-4 text-right">
-      <div className="flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => onUpload(dummyUrl)}
-          className="min-h-12 rounded-2xl border border-white bg-white px-4 text-sm font-black text-black"
-        >
-          رفع الصورة
-        </button>
-
-        <div>
-          <p className="text-sm font-black text-white">صورة المركبة</p>
-          <p className="mt-1 text-sm font-semibold text-white">
-            {imageUrl ? "تم ربط الصورة بنجاح." : "استخدم زر الرفع إذا كان متاحًا."}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-2xl border border-dashed border-white/20 bg-black/30 px-4 py-4">
-        <p className="text-sm font-bold text-white">{imageUrl || "لم يتم اختيار صورة بعد."}</p>
-      </div>
-    </div>
   );
 }

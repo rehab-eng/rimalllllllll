@@ -1,7 +1,6 @@
 "use server";
 
-import { Prisma, type Station } from "../generated/prisma/client";
-import { getPrisma } from "../lib/prisma";
+import { getSql } from "../lib/prisma";
 
 type ActionResponse<T> = {
   success: boolean;
@@ -27,10 +26,6 @@ export type SaveStationInput = {
 const trimText = (value: string | undefined | null): string => (value ?? "").trim();
 
 const getErrorMessage = (error: unknown): string => {
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    return "فشلت عملية قاعدة البيانات.";
-  }
-
   if (error instanceof Error) {
     return error.message;
   }
@@ -49,7 +44,7 @@ export async function saveStation(
   input: SaveStationInput,
 ): Promise<ActionResponse<{ id: number }>> {
   try {
-    const prisma = await getPrisma();
+    const sql = await getSql();
     const name = trimText(input.name);
     const location = trimText(input.location) || null;
     const schedules = input.schedules
@@ -86,59 +81,54 @@ export async function saveStation(
       };
     }
 
-    const station = await prisma.$transaction(async (tx) => {
-      if (input.id) {
-        await tx.station.update({
-          where: {
-            id: input.id,
-          },
-          data: {
-            name,
-            location,
-            is_active: input.isActive ?? true,
-          },
-        });
+    if (input.id) {
+      await sql`
+        UPDATE "Station"
+        SET
+          name = ${name},
+          location = ${location},
+          is_active = ${input.isActive ?? true}
+        WHERE id = ${input.id}
+      `;
 
-        await tx.stationSchedule.deleteMany({
-          where: {
-            stationId: input.id,
-          },
-        });
+      await sql`
+        DELETE FROM "StationSchedule"
+        WHERE "stationId" = ${input.id}
+      `;
 
-        if (schedules.length > 0) {
-          await tx.stationSchedule.createMany({
-            data: schedules.map((schedule) => ({
-              stationId: input.id!,
-              ...schedule,
-            })),
-          });
-        }
-
-        return {
-          id: input.id,
-        };
+      for (const schedule of schedules) {
+        await sql`
+          INSERT INTO "StationSchedule" ("stationId", day_of_week, opens_at, closes_at, is_enabled)
+          VALUES (${input.id}, ${schedule.day_of_week}, ${schedule.opens_at}, ${schedule.closes_at}, ${schedule.is_enabled})
+        `;
       }
 
-      const createdStation = await tx.station.create({
-        data: {
-          name,
-          location,
-          is_active: input.isActive ?? true,
-          schedules: {
-            create: schedules,
-          },
-        },
-        select: {
-          id: true,
-        },
-      });
+      return {
+        success: true,
+        data: { id: input.id },
+      };
+    }
 
-      return createdStation;
-    });
+    const [createdStation] = await sql<{ id: number }[]>`
+      INSERT INTO "Station" (name, location, is_active)
+      VALUES (${name}, ${location}, ${input.isActive ?? true})
+      RETURNING id
+    `;
+
+    if (!createdStation) {
+      throw new Error("تعذر إنشاء المحطة.");
+    }
+
+    for (const schedule of schedules) {
+      await sql`
+        INSERT INTO "StationSchedule" ("stationId", day_of_week, opens_at, closes_at, is_enabled)
+        VALUES (${createdStation.id}, ${schedule.day_of_week}, ${schedule.opens_at}, ${schedule.closes_at}, ${schedule.is_enabled})
+      `;
+    }
 
     return {
       success: true,
-      data: station,
+      data: createdStation,
     };
   } catch (error) {
     return {
@@ -149,23 +139,24 @@ export async function saveStation(
 }
 
 export async function toggleStationActivity(
-  stationId: Station["id"],
+  stationId: number,
   isActive: boolean,
 ): Promise<ActionResponse<{ id: number; isActive: boolean }>> {
   try {
-    const prisma = await getPrisma();
-    const station = await prisma.station.update({
-      where: {
-        id: stationId,
-      },
-      data: {
-        is_active: isActive,
-      },
-      select: {
-        id: true,
-        is_active: true,
-      },
-    });
+    const sql = await getSql();
+    const [station] = await sql<{ id: number; is_active: boolean }[]>`
+      UPDATE "Station"
+      SET is_active = ${isActive}
+      WHERE id = ${stationId}
+      RETURNING id, is_active
+    `;
+
+    if (!station) {
+      return {
+        success: false,
+        error: "المحطة غير موجودة.",
+      };
+    }
 
     return {
       success: true,

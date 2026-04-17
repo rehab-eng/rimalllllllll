@@ -2,11 +2,11 @@
 
 import {
   DriverStatus,
-  Prisma,
-  type Driver,
-  type Vehicle,
-} from "../generated/prisma/client";
-import { getPrisma } from "../lib/prisma";
+  type DriverRow,
+  type FuelLogRow,
+  type VehicleRow,
+} from "../lib/db-types";
+import { getSql } from "../lib/prisma";
 
 type ActionResponse<T> = {
   success: boolean;
@@ -25,60 +25,10 @@ type RegisterDriverInput = {
     license_number?: string;
   };
   vehicle: Pick<
-    Prisma.VehicleCreateInput,
+    VehicleRow,
     "truck_type" | "plates_number" | "trailer_plates" | "truck_volume" | "image_url"
   >;
 };
-
-const driverDashboardArgs = {
-  include: {
-    vehicles: {
-      where: {
-        is_active: true,
-      },
-      orderBy: {
-        id: "asc",
-      },
-      include: {
-        fuel_logs: {
-          select: {
-            liters: true,
-            fuel_type: true,
-            status: true,
-          },
-        },
-      },
-    },
-    fuel_logs: {
-      include: {
-        station: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        vehicle: {
-          select: {
-            id: true,
-            plates_number: true,
-          },
-        },
-      },
-      orderBy: {
-        date: "desc",
-      },
-      take: 12,
-    },
-    _count: {
-      select: {
-        fuel_logs: true,
-        vehicles: true,
-      },
-    },
-  },
-} satisfies Prisma.DriverDefaultArgs;
-
-type DriverDashboardRecord = Prisma.DriverGetPayload<typeof driverDashboardArgs>;
 
 type VehicleConsumptionSummary = {
   vehicleId: number;
@@ -88,9 +38,9 @@ type VehicleConsumptionSummary = {
 };
 
 type DriverDashboardStats = {
-  driver: Omit<DriverDashboardRecord, "_count" | "vehicles">;
+  driver: DriverRow;
   vehicles: Array<
-    Omit<DriverDashboardRecord["vehicles"][number], "fuel_logs"> & {
+    VehicleRow & {
       totalLiters: number;
       totalLogs: number;
     }
@@ -110,15 +60,11 @@ const generateDriverCode = (): string => {
 };
 
 const getErrorMessage = (error: unknown): string => {
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    if (error.code === "P2002") {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("duplicate key")) {
       return "رمز السائق أو رقم الهاتف مستخدم من قبل.";
     }
-
-    return "فشلت عملية قاعدة البيانات.";
-  }
-
-  if (error instanceof Error) {
     return error.message;
   }
 
@@ -127,9 +73,9 @@ const getErrorMessage = (error: unknown): string => {
 
 export async function registerDriverWithVehicle(
   input: RegisterDriverInput,
-): Promise<ActionResponse<{ driver: Driver; vehicle: Vehicle }>> {
+): Promise<ActionResponse<{ driver: DriverRow; vehicle: VehicleRow }>> {
   try {
-    const prisma = await getPrisma();
+    const sql = await getSql();
 
     const driverData = {
       code: trimText(input.driver.code) || generateDriverCode(),
@@ -145,7 +91,7 @@ export async function registerDriverWithVehicle(
       truck_type: trimText(input.vehicle.truck_type),
       plates_number: trimText(input.vehicle.plates_number),
       trailer_plates: trimText(input.vehicle.trailer_plates) || null,
-      truck_volume: input.vehicle.truck_volume,
+      truck_volume: Number(input.vehicle.truck_volume),
       image_url: trimText(input.vehicle.image_url) || null,
     };
 
@@ -169,37 +115,63 @@ export async function registerDriverWithVehicle(
       };
     }
 
-    if (!Number.isFinite(Number(vehicleData.truck_volume)) || Number(vehicleData.truck_volume) <= 0) {
+    if (!Number.isFinite(vehicleData.truck_volume) || vehicleData.truck_volume <= 0) {
       return {
         success: false,
         error: "سعة الشاحنة يجب أن تكون أكبر من صفر.",
       };
     }
 
-    const data = await prisma.$transaction(async (tx) => {
-      const driver = await tx.driver.create({
-        data: {
-          ...driverData,
-          status: DriverStatus.ACTIVE,
-        },
-      });
+    const [createdDriver] = await sql<DriverRow[]>`
+      INSERT INTO "Driver" (
+        code, full_name, national_id, phone, password, license_url, license_number, status, deleted_at
+      )
+      VALUES (
+        ${driverData.code},
+        ${driverData.full_name},
+        ${driverData.national_id},
+        ${driverData.phone},
+        ${driverData.password},
+        ${driverData.license_url},
+        ${driverData.license_number},
+        ${DriverStatus.ACTIVE},
+        NULL
+      )
+      RETURNING
+        id, code, full_name, national_id, phone, password, license_url, license_number, status, deleted_at, created_at, updated_at
+    `;
 
-      const vehicle = await tx.vehicle.create({
-        data: {
-          ...vehicleData,
-          driverId: driver.id,
-        },
-      });
+    if (!createdDriver) {
+      throw new Error("تعذر إنشاء حساب السائق.");
+    }
 
-      return {
-        driver,
-        vehicle,
-      };
-    });
+    const [createdVehicle] = await sql<VehicleRow[]>`
+      INSERT INTO "Vehicle" (
+        "driverId", truck_type, plates_number, trailer_plates, truck_volume, image_url, is_active
+      )
+      VALUES (
+        ${createdDriver.id},
+        ${vehicleData.truck_type},
+        ${vehicleData.plates_number},
+        ${vehicleData.trailer_plates},
+        ${vehicleData.truck_volume},
+        ${vehicleData.image_url},
+        true
+      )
+      RETURNING
+        id, "driverId", truck_type, plates_number, trailer_plates, truck_volume::float8 AS truck_volume, image_url, is_active, created_at, updated_at
+    `;
+
+    if (!createdVehicle) {
+      throw new Error("تم إنشاء السائق وتعذر إنشاء المركبة.");
+    }
 
     return {
       success: true,
-      data,
+      data: {
+        driver: createdDriver,
+        vehicle: createdVehicle,
+      },
     };
   } catch (error) {
     return {
@@ -210,10 +182,10 @@ export async function registerDriverWithVehicle(
 }
 
 export async function getDriverDashboardStatsByCode(
-  code: Driver["code"],
+  code: DriverRow["code"],
 ): Promise<ActionResponse<DriverDashboardStats>> {
   try {
-    const prisma = await getPrisma();
+    const sql = await getSql();
     const normalizedCode = trimText(code);
 
     if (!normalizedCode) {
@@ -223,13 +195,41 @@ export async function getDriverDashboardStatsByCode(
       };
     }
 
-    const driver = await prisma.driver.findFirst({
-      where: {
-        code: normalizedCode,
-        deleted_at: null,
-      },
-      ...driverDashboardArgs,
-    });
+    const [driver] = await sql<
+      (DriverRow & {
+        total_fuel_logs: number;
+        total_vehicles: number;
+      })[]
+    >`
+      SELECT
+        d.id,
+        d.code,
+        d.full_name,
+        d.national_id,
+        d.phone,
+        d.password,
+        d.license_url,
+        d.license_number,
+        d.status,
+        d.deleted_at,
+        d.created_at,
+        d.updated_at,
+        (
+          SELECT COUNT(*)::int
+          FROM "FuelLog" fl
+          WHERE fl."driverId" = d.id
+        ) AS total_fuel_logs,
+        (
+          SELECT COUNT(*)::int
+          FROM "Vehicle" v
+          WHERE v."driverId" = d.id
+            AND v.is_active = true
+        ) AS total_vehicles
+      FROM "Driver" d
+      WHERE d.code = ${normalizedCode}
+        AND d.deleted_at IS NULL
+      LIMIT 1
+    `;
 
     if (!driver) {
       return {
@@ -238,21 +238,39 @@ export async function getDriverDashboardStatsByCode(
       };
     }
 
-    const { _count, vehicles, ...driverData } = driver;
+    const vehicles = await sql<
+      (VehicleRow & {
+        total_liters: number;
+        total_logs: number;
+      })[]
+    >`
+      SELECT
+        v.id,
+        v."driverId",
+        v.truck_type,
+        v.plates_number,
+        v.trailer_plates,
+        v.truck_volume::float8 AS truck_volume,
+        v.image_url,
+        v.is_active,
+        v.created_at,
+        v.updated_at,
+        COALESCE(SUM(fl.liters), 0)::float8 AS total_liters,
+        COUNT(fl.id)::int AS total_logs
+      FROM "Vehicle" v
+      LEFT JOIN "FuelLog" fl ON fl."vehicleId" = v.id
+      WHERE v."driverId" = ${driver.id}
+        AND v.is_active = true
+      GROUP BY v.id
+      ORDER BY v.id ASC
+    `;
 
-    const vehicleConsumption = vehicles.map((vehicle) => {
-      const totalLiters = vehicle.fuel_logs.reduce(
-        (total, fuelLog) => total + Number(fuelLog.liters),
-        0,
-      );
-
-      return {
-        vehicleId: vehicle.id,
-        platesNumber: vehicle.plates_number,
-        totalLiters,
-        totalLogs: vehicle.fuel_logs.length,
-      };
-    });
+    const vehicleConsumption = vehicles.map((vehicle) => ({
+      vehicleId: vehicle.id,
+      platesNumber: vehicle.plates_number,
+      totalLiters: Number(vehicle.total_liters),
+      totalLogs: Number(vehicle.total_logs),
+    }));
 
     const totalFilledLiters = vehicleConsumption.reduce(
       (total, vehicle) => total + vehicle.totalLiters,
@@ -262,14 +280,14 @@ export async function getDriverDashboardStatsByCode(
     return {
       success: true,
       data: {
-        driver: driverData,
-        vehicles: vehicles.map(({ fuel_logs, ...vehicle }) => ({
+        driver,
+        vehicles: vehicles.map((vehicle) => ({
           ...vehicle,
-          totalLiters: fuel_logs.reduce((total, fuelLog) => total + Number(fuelLog.liters), 0),
-          totalLogs: fuel_logs.length,
+          totalLiters: Number(vehicle.total_liters),
+          totalLogs: Number(vehicle.total_logs),
         })),
-        totalFuelLogs: _count.fuel_logs,
-        totalVehicles: _count.vehicles,
+        totalFuelLogs: Number(driver.total_fuel_logs),
+        totalVehicles: Number(driver.total_vehicles),
         totalFilledLiters,
         vehicleConsumption,
       },
@@ -283,25 +301,27 @@ export async function getDriverDashboardStatsByCode(
 }
 
 export async function updateDriverStatus(
-  driverId: Driver["id"],
+  driverId: DriverRow["id"],
   status: DriverStatus,
 ): Promise<ActionResponse<{ id: number; status: DriverStatus }>> {
   try {
-    const prisma = await getPrisma();
+    const sql = await getSql();
 
-    const driver = await prisma.driver.update({
-      where: {
-        id: driverId,
-      },
-      data: {
-        status,
-        deleted_at: status === DriverStatus.DELETED ? new Date() : null,
-      },
-      select: {
-        id: true,
-        status: true,
-      },
-    });
+    const [driver] = await sql<{ id: number; status: DriverStatus }[]>`
+      UPDATE "Driver"
+      SET
+        status = ${status},
+        deleted_at = ${status === DriverStatus.DELETED ? new Date().toISOString() : null}
+      WHERE id = ${driverId}
+      RETURNING id, status
+    `;
+
+    if (!driver) {
+      return {
+        success: false,
+        error: "السائق غير موجود.",
+      };
+    }
 
     return {
       success: true,
@@ -316,24 +336,26 @@ export async function updateDriverStatus(
 }
 
 export async function deleteDriverAccount(
-  driverId: Driver["id"],
-): Promise<ActionResponse<{ id: number; deletedAt: Date | null }>> {
+  driverId: DriverRow["id"],
+): Promise<ActionResponse<{ id: number; deletedAt: Date | string | null }>> {
   try {
-    const prisma = await getPrisma();
+    const sql = await getSql();
 
-    const driver = await prisma.driver.update({
-      where: {
-        id: driverId,
-      },
-      data: {
-        status: DriverStatus.DELETED,
-        deleted_at: new Date(),
-      },
-      select: {
-        id: true,
-        deleted_at: true,
-      },
-    });
+    const [driver] = await sql<{ id: number; deleted_at: Date | string | null }[]>`
+      UPDATE "Driver"
+      SET
+        status = ${DriverStatus.DELETED},
+        deleted_at = NOW()
+      WHERE id = ${driverId}
+      RETURNING id, deleted_at
+    `;
+
+    if (!driver) {
+      return {
+        success: false,
+        error: "السائق غير موجود.",
+      };
+    }
 
     return {
       success: true,

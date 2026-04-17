@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 
-import type { Driver, FuelLog, FuelType, Station, Vehicle } from "../generated/prisma/client";
+import type { DriverRow, FuelLogRow, FuelType, StationRow, VehicleRow } from "./db-types";
 
 type ActionResponse<T> = {
   success: boolean;
@@ -8,19 +8,19 @@ type ActionResponse<T> = {
   error?: string;
 };
 
-export type FuelLogExcelItem = FuelLog & {
-  driver?: Pick<Driver, "code" | "full_name"> | null;
-  vehicle?: Pick<Vehicle, "plates_number" | "trailer_plates" | "truck_type"> | null;
-  station?: Pick<Station, "name"> | null;
+export type FuelLogExcelItem = FuelLogRow & {
+  driver?: Pick<DriverRow, "code" | "full_name"> | null;
+  vehicle?: Pick<VehicleRow, "plates_number" | "trailer_plates" | "truck_type"> | null;
+  station?: Pick<StationRow, "name"> | null;
 };
 
-const statusLabels: Record<FuelLog["status"], string> = {
+const statusLabels: Record<FuelLogRow["status"], string> = {
   PENDING: "\u0642\u064A\u062F \u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0631",
   APPROVED: "\u0645\u0639\u062A\u0645\u062F",
   REJECTED: "\u0645\u0631\u0641\u0648\u0636",
 };
 
-const formatDate = (value: FuelLog["date"]): string => {
+const formatDate = (value: FuelLogRow["date"]): string => {
   const date = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
@@ -36,7 +36,7 @@ const formatDate = (value: FuelLog["date"]): string => {
   }).format(date);
 };
 
-const formatDecimal = (value: FuelLog["liters"]): string => {
+const formatDecimal = (value: FuelLogRow["liters"]): string => {
   return String(value);
 };
 
@@ -47,7 +47,7 @@ const fuelTypeLabels: Record<FuelType, string> = {
 
 export function exportFuelLogsToExcel(
   fuelLogs: readonly FuelLogExcelItem[],
-  driverName: Driver["full_name"],
+  driverName: DriverRow["full_name"],
 ): ActionResponse<{ fileName: string }> {
   try {
     if (typeof window === "undefined") {

@@ -2,7 +2,7 @@ import type {
   DriverStatus,
   FuelLogStatus,
   FuelType,
-} from "../generated/prisma/client";
+} from "./db-types";
 import type { StationRuntimeStatus } from "./station-status";
 
 export const driverStatusLabels: Record<DriverStatus, string> = {

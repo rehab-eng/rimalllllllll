@@ -43,7 +43,7 @@ export default function HomePage() {
           <div className="space-y-5">
             <div className="rounded-[28px] border border-white/20 bg-black/30 p-5">
               <p className="text-sm font-bold tracking-[0.12em] text-white">البنية التقنية</p>
-              <p className="mt-3 text-lg font-black text-white">Next.js App Router و Prisma 7 و Neon و Pusher</p>
+              <p className="mt-3 text-lg font-black text-white">Next.js App Router و Neon SQL و Pusher</p>
             </div>
 
             <div className="rounded-[28px] border border-white/20 bg-black/30 p-5">

@@ -1,8 +1,8 @@
 import { revalidatePath } from "next/cache";
 
-import SystemStatusCard from "../../components/SystemStatusCard";
 import { deleteDriverAccount, updateDriverStatus } from "../../actions/driver.actions";
 import { saveStation, toggleStationActivity } from "../../actions/station.actions";
+import SystemStatusCard from "../../components/SystemStatusCard";
 import AdminDashboard from "../../features/admin/AdminDashboard";
 import AdminDataTable from "../../features/admin/AdminDataTable";
 import AdminDriversPanel from "../../features/admin/AdminDriversPanel";
@@ -14,9 +14,9 @@ import type {
   AdminStationRow,
 } from "../../features/admin/types";
 import type { ActionResult } from "../../features/driver/types";
-import { DriverStatus } from "../../generated/prisma/client";
+import { DriverStatus } from "../../lib/db-types";
 import { formatArabicNumber } from "../../lib/labels";
-import { getPrisma, isDatabaseConfigured } from "../../lib/prisma";
+import { getSql, isDatabaseConfigured } from "../../lib/prisma";
 import { getStationRuntimeStatus } from "../../lib/station-status";
 
 export const dynamic = "force-dynamic";
@@ -26,21 +26,46 @@ const serializeForClient = <T,>(value: T): T => JSON.parse(JSON.stringify(value)
 const pageBackground =
   "min-h-screen bg-[radial-gradient(circle_at_top,rgba(245,245,244,0.14),transparent_22%),radial-gradient(circle_at_bottom_left,rgba(82,82,91,0.16),transparent_30%),linear-gradient(135deg,#030712_0%,#111827_45%,#1f2937_100%)]";
 
+type FuelLogRowRaw = {
+  id: number;
+  driverId: number;
+  vehicleId: number;
+  stationId: number | null;
+  liters: number;
+  fuel_type: "DIESEL" | "GASOLINE";
+  date: Date | string;
+  confirmed_at: Date | string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  driver_id: number;
+  driver_code: string;
+  driver_full_name: string;
+  driver_phone: string;
+  driver_status: "ACTIVE" | "SUSPENDED" | "DELETED";
+  vehicle_id: number;
+  vehicle_plates_number: string;
+  vehicle_trailer_plates: string | null;
+  vehicle_truck_type: string;
+  station_id: number | null;
+  station_name: string | null;
+  station_location: string | null;
+  station_is_active: boolean | null;
+};
+
 export default async function AdminPage() {
-  if (!isDatabaseConfigured()) {
+  if (!(await isDatabaseConfigured())) {
     return (
       <main className={pageBackground}>
         <SystemStatusCard
           title="المنظومة غير مهيأة بعد"
-          description="لوحة الإدارة تحتاج اتصالًا بقاعدة البيانات، لكن متغير DATABASE_URL غير موجود داخل إعدادات الاستضافة."
-          details="أضف DATABASE_URL في Cloudflare Workers، وضعه أيضًا في Build Variables and Secrets، ثم أعد النشر."
+          description="لوحة الإدارة تحتاج اتصالًا بقاعدة البيانات، لكن DATABASE_URL غير موجود."
+          details="أضف DATABASE_URL في Cloudflare Workers ثم أعد النشر."
         />
       </main>
     );
   }
 
   try {
-    const prisma = await getPrisma();
+    const sql = await getSql();
     const now = new Date();
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
@@ -48,129 +73,220 @@ export default async function AdminPage() {
     const startOfNextDay = new Date(startOfDay);
     startOfNextDay.setDate(startOfNextDay.getDate() + 1);
 
-    const [fuelLogs, totalLogsToday, drivers, vehicleAggregates, stations] = await Promise.all([
-      prisma.fuelLog.findMany({
-        include: {
-          driver: {
-            select: {
-              id: true,
-              code: true,
-              full_name: true,
-              phone: true,
-              status: true,
-            },
-          },
-          vehicle: {
-            select: {
-              id: true,
-              plates_number: true,
-              trailer_plates: true,
-              truck_type: true,
-            },
-          },
-          station: {
-            select: {
-              id: true,
-              name: true,
-              location: true,
-              is_active: true,
-            },
-          },
-        },
-        orderBy: {
-          date: "desc",
-        },
-      }),
-      prisma.fuelLog.count({
-        where: {
-          date: {
-            gte: startOfDay,
-            lt: startOfNextDay,
-          },
-        },
-      }),
-      prisma.driver.findMany({
-        where: {
-          deleted_at: null,
-        },
-        include: {
-          _count: {
-            select: {
-              vehicles: true,
-              fuel_logs: true,
-            },
-          },
-        },
-        orderBy: {
-          created_at: "desc",
-        },
-      }),
-      prisma.fuelLog.groupBy({
-        by: ["driverId"],
-        _sum: {
-          liters: true,
-        },
-      }),
-      prisma.station.findMany({
-        include: {
-          schedules: {
-            orderBy: {
-              day_of_week: "asc",
-            },
-          },
-          _count: {
-            select: {
-              fuel_logs: true,
-            },
-          },
-        },
-        orderBy: [
+    const [fuelLogsRaw, totalLogsTodayRows, driversRaw, vehicleAggregates, stationsRaw, schedulesRaw] =
+      await Promise.all([
+        sql<FuelLogRowRaw[]>`
+          SELECT
+            fl.id,
+            fl."driverId",
+            fl."vehicleId",
+            fl."stationId",
+            fl.liters::float8 AS liters,
+            fl.fuel_type,
+            fl.date,
+            fl.confirmed_at,
+            fl.status,
+            d.id AS driver_id,
+            d.code AS driver_code,
+            d.full_name AS driver_full_name,
+            d.phone AS driver_phone,
+            d.status AS driver_status,
+            v.id AS vehicle_id,
+            v.plates_number AS vehicle_plates_number,
+            v.trailer_plates AS vehicle_trailer_plates,
+            v.truck_type AS vehicle_truck_type,
+            s.id AS station_id,
+            s.name AS station_name,
+            s.location AS station_location,
+            s.is_active AS station_is_active
+          FROM "FuelLog" fl
+          JOIN "Driver" d ON d.id = fl."driverId"
+          JOIN "Vehicle" v ON v.id = fl."vehicleId"
+          LEFT JOIN "Station" s ON s.id = fl."stationId"
+          ORDER BY fl.date DESC
+        `,
+        sql<{ total: number }[]>`
+          SELECT COUNT(*)::int AS total
+          FROM "FuelLog"
+          WHERE date >= ${startOfDay.toISOString()}
+            AND date < ${startOfNextDay.toISOString()}
+        `,
+        sql<
           {
-            is_active: "desc",
-          },
+            id: number;
+            code: string;
+            full_name: string;
+            phone: string;
+            status: "ACTIVE" | "SUSPENDED" | "DELETED";
+            vehicle_count: number;
+            fuel_log_count: number;
+          }[]
+        >`
+          SELECT
+            d.id,
+            d.code,
+            d.full_name,
+            d.phone,
+            d.status,
+            (
+              SELECT COUNT(*)::int
+              FROM "Vehicle" v
+              WHERE v."driverId" = d.id
+                AND v.is_active = true
+            ) AS vehicle_count,
+            (
+              SELECT COUNT(*)::int
+              FROM "FuelLog" fl
+              WHERE fl."driverId" = d.id
+            ) AS fuel_log_count
+          FROM "Driver" d
+          WHERE d.deleted_at IS NULL
+          ORDER BY d.created_at DESC
+        `,
+        sql<{ driver_id: number; total_liters: number }[]>`
+          SELECT
+            "driverId" AS driver_id,
+            COALESCE(SUM(liters), 0)::float8 AS total_liters
+          FROM "FuelLog"
+          GROUP BY "driverId"
+        `,
+        sql<
           {
-            name: "asc",
-          },
-        ],
-      }),
-    ]);
+            id: number;
+            name: string;
+            location: string | null;
+            is_active: boolean;
+            total_logs: number;
+          }[]
+        >`
+          SELECT
+            s.id,
+            s.name,
+            s.location,
+            s.is_active,
+            COUNT(fl.id)::int AS total_logs
+          FROM "Station" s
+          LEFT JOIN "FuelLog" fl ON fl."stationId" = s.id
+          GROUP BY s.id
+          ORDER BY s.is_active DESC, s.name ASC
+        `,
+        sql<
+          {
+            id: number;
+            station_id: number;
+            day_of_week: number;
+            opens_at: string;
+            closes_at: string;
+            is_enabled: boolean;
+          }[]
+        >`
+          SELECT
+            id,
+            "stationId" AS station_id,
+            day_of_week,
+            opens_at,
+            closes_at,
+            is_enabled
+          FROM "StationSchedule"
+          ORDER BY day_of_week ASC
+        `,
+      ]);
 
     const totalByDriver = new Map(
-      vehicleAggregates.map((item) => [item.driverId, Number(item._sum.liters ?? 0)]),
+      vehicleAggregates.map((item) => [item.driver_id, Number(item.total_liters)]),
     );
 
-    const tableRows = serializeForClient<AdminFuelLogRow[]>(fuelLogs);
+    const tableRows = serializeForClient<AdminFuelLogRow[]>(
+      fuelLogsRaw.map((row) => ({
+        id: row.id,
+        driverId: row.driverId,
+        vehicleId: row.vehicleId,
+        stationId: row.stationId,
+        liters: Number(row.liters),
+        fuel_type: row.fuel_type,
+        date: row.date,
+        confirmed_at: row.confirmed_at,
+        status: row.status,
+        driver: {
+          id: row.driver_id,
+          code: row.driver_code,
+          full_name: row.driver_full_name,
+          phone: row.driver_phone,
+          status: row.driver_status,
+        },
+        vehicle: {
+          id: row.vehicle_id,
+          plates_number: row.vehicle_plates_number,
+          trailer_plates: row.vehicle_trailer_plates,
+          truck_type: row.vehicle_truck_type,
+        },
+        station:
+          row.station_id === null
+            ? null
+            : {
+                id: row.station_id,
+                name: row.station_name ?? "",
+                location: row.station_location,
+                is_active: Boolean(row.station_is_active),
+              },
+      })),
+    );
 
     const driverRows = serializeForClient<AdminDriverRow[]>(
-      drivers.map((driver) => ({
+      driversRaw.map((driver) => ({
         id: driver.id,
         code: driver.code,
         fullName: driver.full_name,
         phone: driver.phone,
         status: driver.status,
-        vehicleCount: driver._count.vehicles,
-        totalFuelLogs: driver._count.fuel_logs,
+        vehicleCount: Number(driver.vehicle_count),
+        totalFuelLogs: Number(driver.fuel_log_count),
         totalFilledLiters: totalByDriver.get(driver.id) ?? 0,
       })),
     );
 
+    const scheduleMap = new Map<
+      number,
+      Array<{
+        id: number;
+        day_of_week: number;
+        opens_at: string;
+        closes_at: string;
+        is_enabled: boolean;
+      }>
+    >();
+
+    for (const schedule of schedulesRaw) {
+      const current = scheduleMap.get(schedule.station_id) ?? [];
+      current.push({
+        id: schedule.id,
+        day_of_week: schedule.day_of_week,
+        opens_at: schedule.opens_at,
+        closes_at: schedule.closes_at,
+        is_enabled: schedule.is_enabled,
+      });
+      scheduleMap.set(schedule.station_id, current);
+    }
+
     const stationRows = serializeForClient<AdminStationRow[]>(
-      stations.map((station) => ({
-        id: station.id,
-        name: station.name,
-        location: station.location,
-        is_active: station.is_active,
-        runtimeStatus: getStationRuntimeStatus(station),
-        schedules: station.schedules.map((schedule) => ({
-          id: schedule.id,
-          day_of_week: schedule.day_of_week,
-          opens_at: schedule.opens_at,
-          closes_at: schedule.closes_at,
-          is_enabled: schedule.is_enabled,
-        })),
-        totalLogs: station._count.fuel_logs,
-      })),
+      stationsRaw.map((station) => {
+        const schedules = scheduleMap.get(station.id) ?? [];
+        return {
+          id: station.id,
+          name: station.name,
+          location: station.location,
+          is_active: station.is_active,
+          runtimeStatus: getStationRuntimeStatus({
+            is_active: station.is_active,
+            schedules,
+          }),
+          schedules,
+          totalLogs: Number(station.total_logs),
+        };
+      }),
     );
+
+    const totalLogsToday = Number(totalLogsTodayRows[0]?.total ?? 0);
 
     async function handleSuspendDriver(driverId: number): Promise<ActionResult> {
       "use server";
@@ -284,7 +400,7 @@ export default async function AdminPage() {
             {
               id: "logs",
               label: "سجلات التعبئة",
-              value: fuelLogs.length,
+              value: tableRows.length,
               hint: "جميع التأكيدات المسجلة",
             },
           ]}
