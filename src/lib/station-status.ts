@@ -13,13 +13,13 @@ export type StationLike = {
 export type StationRuntimeStatus = "OPEN" | "CLOSED" | "INACTIVE";
 
 export const weekdayLabels = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
+  "الأحد",
+  "الإثنين",
+  "الثلاثاء",
+  "الأربعاء",
+  "الخميس",
+  "الجمعة",
+  "السبت",
 ] as const;
 
 const parseTimeToMinutes = (value: string): number => {

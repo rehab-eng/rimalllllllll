@@ -1,21 +1,22 @@
 import type { Metadata } from "next";
-import { Manrope, Playfair_Display } from "next/font/google";
+import { Cairo, Tajawal } from "next/font/google";
 
 import "./globals.css";
 
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
+const cairo = Cairo({
+  variable: "--font-cairo",
+  subsets: ["arabic", "latin"],
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin"],
+const tajawal = Tajawal({
+  variable: "--font-tajawal",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
-  title: "Rimall Lines ERP",
-  description: "Fuel management ERP for Rimall Lines construction operations.",
+  title: "منظومة رمّال لاينز",
+  description: "منظومة إدارة الوقود والسائقين والمحطات لشركة رمّال لاينز.",
 };
 
 export default function RootLayout({
@@ -25,8 +26,9 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${manrope.variable} ${playfair.variable} h-full antialiased`}
+      lang="ar"
+      dir="rtl"
+      className={`${cairo.variable} ${tajawal.variable} h-full antialiased`}
     >
       <body className="min-h-full">{children}</body>
     </html>

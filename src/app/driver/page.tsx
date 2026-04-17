@@ -1,5 +1,7 @@
 import { revalidatePath } from "next/cache";
+import { connection } from "next/server";
 
+import SystemStatusCard from "../../components/SystemStatusCard";
 import { deleteDriverAccount } from "../../actions/driver.actions";
 import { logFuelEntry } from "../../actions/fuel.actions";
 import DriverDangerZone from "../../features/driver/DriverDangerZone";
@@ -19,9 +21,13 @@ import type {
   FuelFillVehicleOption,
 } from "../../features/driver/types";
 import { DriverStatus, FuelLogStatus } from "../../generated/prisma/client";
-import SystemStatusCard from "../../components/SystemStatusCard";
+import { fuelLogStatusLabels, fuelTypeLabels, formatArabicDateTime } from "../../lib/labels";
 import { getPrisma, isDatabaseConfigured } from "../../lib/prisma";
-import { formatScheduleWindow, getStationRuntimeStatus, weekdayLabels } from "../../lib/station-status";
+import {
+  formatScheduleWindow,
+  getStationRuntimeStatus,
+  weekdayLabels,
+} from "../../lib/station-status";
 
 export const dynamic = "force-dynamic";
 
@@ -35,30 +41,16 @@ const parseNumber = (value: string | number): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const formatDate = (value: Date | string): string => {
-  const date = value instanceof Date ? value : new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-};
-
 export default async function DriverPage() {
+  await connection();
+
   if (!isDatabaseConfigured()) {
     return (
       <main className={pageBackground}>
         <SystemStatusCard
           title="بوابة السائق غير مهيأة بعد"
           description="البوابة تحتاج اتصالًا بقاعدة البيانات، لكن متغير DATABASE_URL غير موجود داخل إعدادات الاستضافة."
-          details="أضف DATABASE_URL في Cloudflare Pages ثم أعد النشر."
+          details="أضف DATABASE_URL في Cloudflare Workers، وضعه أيضًا في Build Variables and Secrets، ثم أعد النشر."
         />
       </main>
     );
@@ -216,7 +208,10 @@ export default async function DriverPage() {
       isActive: station.is_active,
       runtimeStatus: getStationRuntimeStatus(station),
       scheduleSummary: station.schedules.map((schedule) =>
-        `${weekdayLabels[schedule.day_of_week]} ${formatScheduleWindow(schedule.opens_at, schedule.closes_at)}`,
+        `${weekdayLabels[schedule.day_of_week]} ${formatScheduleWindow(
+          schedule.opens_at,
+          schedule.closes_at,
+        )}`,
       ),
     }));
 
@@ -252,9 +247,9 @@ export default async function DriverPage() {
     const recentFuelHistory: DriverFuelHistoryItem[] = recentFuelLogs.map((log) => ({
       id: log.id,
       liters: Number(log.liters),
-      fuelType: log.fuel_type,
-      status: log.status,
-      date: formatDate(log.date),
+      fuelType: fuelTypeLabels[log.fuel_type],
+      status: fuelLogStatusLabels[log.status],
+      date: formatArabicDateTime(log.date),
       stationName: log.station?.name,
       vehiclePlates: log.vehicle.plates_number,
     }));
@@ -265,7 +260,7 @@ export default async function DriverPage() {
       if (!driver) {
         return {
           success: false,
-          error: "No driver record is available for this mock session.",
+          error: "لا يوجد سائق متاح في هذه الجلسة التجريبية.",
         };
       }
 
@@ -279,7 +274,7 @@ export default async function DriverPage() {
       if (!truckType || !platesNumber || truckVolume <= 0) {
         return {
           success: false,
-          error: "Truck type, plates, and a valid truck volume are required.",
+          error: "يجب إدخال نوع الشاحنة ورقم اللوحة وسعة صحيحة.",
         };
       }
 
@@ -303,7 +298,7 @@ export default async function DriverPage() {
       } catch (error) {
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Unable to add vehicle.",
+          error: error instanceof Error ? error.message : "تعذر إضافة المركبة.",
         };
       }
     }
@@ -314,7 +309,7 @@ export default async function DriverPage() {
       if (!driver) {
         return {
           success: false,
-          error: "No driver record is available for this mock session.",
+          error: "لا يوجد سائق متاح في هذه الجلسة التجريبية.",
         };
       }
 
@@ -344,7 +339,7 @@ export default async function DriverPage() {
       if (!driver) {
         return {
           success: false,
-          error: "No driver record is available for this mock session.",
+          error: "لا يوجد سائق متاح في هذه الجلسة التجريبية.",
         };
       }
 
@@ -362,12 +357,13 @@ export default async function DriverPage() {
     }
 
     const dashboardDriver = {
-      fullName: driver?.full_name ?? "Demo Driver",
+      fullName: driver?.full_name ?? "سائق تجريبي",
       code: driver?.code ?? MOCK_DRIVER_CODE,
       totalFilledLiters,
       totalFuelLogs: driver?._count.fuel_logs ?? 0,
       vehicleCount: driver?._count.vehicles ?? 0,
-      activeStationCount: stationSummaries.filter((station) => station.runtimeStatus === "OPEN").length,
+      activeStationCount: stationSummaries.filter((station) => station.runtimeStatus === "OPEN")
+        .length,
       accountStatus: driver?.status ?? DriverStatus.ACTIVE,
     };
 
@@ -376,10 +372,10 @@ export default async function DriverPage() {
         <DriverDashboard
           driver={dashboardDriver}
           navigationItems={[
-            { id: "fuel-fill", label: "Fuel Confirmation" },
-            { id: "stations", label: "Stations" },
-            { id: "fleet", label: "My Fleet" },
-            { id: "account", label: "Account" },
+            { id: "fuel-fill", label: "تأكيد التعبئة" },
+            { id: "stations", label: "المحطات" },
+            { id: "fleet", label: "مركباتي" },
+            { id: "account", label: "الحساب" },
           ]}
           activeNavId="fuel-fill"
         >
@@ -394,7 +390,7 @@ export default async function DriverPage() {
       </main>
     );
   } catch (error) {
-    const details = error instanceof Error ? error.message : "Unexpected server error.";
+    const details = error instanceof Error ? error.message : "حدث خطأ غير متوقع.";
 
     return (
       <main className={pageBackground}>

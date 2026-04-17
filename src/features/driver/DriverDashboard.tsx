@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 
+import { driverStatusLabels, formatArabicNumber } from "../../lib/labels";
 import type { DriverDashboardData, DriverNavigationItem } from "./types";
 
 type DriverDashboardProps = {
@@ -13,11 +14,6 @@ type DriverDashboardProps = {
   onSignOut?: () => void;
   children?: ReactNode;
 };
-
-const formatNumber = (value: number): string =>
-  new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(value);
 
 export default function DriverDashboard({
   driver,
@@ -40,23 +36,23 @@ export default function DriverDashboard({
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(190,242,100,0.12),transparent_28%)]" />
 
         <div className="relative flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-white">Rimall Lines</p>
-            <h1 className="mt-2 text-3xl font-black text-white">{driver.fullName}</h1>
-            <p className="mt-2 text-sm font-semibold text-white">Driver access and fuel follow-up</p>
-          </div>
-
           <button
             type="button"
-            aria-label="Open navigation menu"
+            aria-label="فتح قائمة التنقل"
             onClick={() => setIsMenuOpen(true)}
             className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-black/30 text-white"
           >
             <HamburgerIcon />
           </button>
+
+          <div className="flex-1 text-right">
+            <p className="text-xs font-bold tracking-[0.18em] text-white">بوابة السائق</p>
+            <h1 className="mt-2 text-3xl font-black text-white">{driver.fullName}</h1>
+            <p className="mt-2 text-sm font-semibold text-white">متابعة التعبئة والمركبات والمحطات</p>
+          </div>
         </div>
 
-        <div className="relative mt-5 flex flex-wrap items-center gap-3">
+        <div className="relative mt-5 flex flex-wrap items-center justify-end gap-3">
           <div className="inline-flex rounded-full bg-white px-4 py-2 text-sm font-black text-black">
             {driver.code}
           </div>
@@ -67,17 +63,17 @@ export default function DriverDashboard({
                 : "border border-white/20 bg-black/30 text-white"
             }`}
           >
-            {driver.accountStatus}
+            {driverStatusLabels[driver.accountStatus]}
           </div>
         </div>
       </div>
 
       <div className="bg-white/10 backdrop-blur-md border border-white/20 mt-4 rounded-[30px] p-5 shadow-2xl">
         <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Total Liters" value={formatNumber(driver.totalFilledLiters)} helper="All periods" />
-          <StatCard label="Fuel Logs" value={driver.totalFuelLogs} helper="Confirmed fills" />
-          <StatCard label="Vehicles" value={driver.vehicleCount} helper="Registered trucks" />
-          <StatCard label="Open Stations" value={driver.activeStationCount} helper="Available now" />
+          <StatCard label="إجمالي اللترات" value={formatArabicNumber(driver.totalFilledLiters)} helper="كل الفترات" />
+          <StatCard label="سجلات التعبئة" value={formatArabicNumber(driver.totalFuelLogs)} helper="عمليات مؤكدة" />
+          <StatCard label="المركبات" value={formatArabicNumber(driver.vehicleCount)} helper="شاحنات مسجلة" />
+          <StatCard label="المحطات المفتوحة" value={formatArabicNumber(driver.activeStationCount)} helper="متاحة الآن" />
         </div>
       </div>
 
@@ -87,26 +83,26 @@ export default function DriverDashboard({
         <div className="fixed inset-0 z-40">
           <button
             type="button"
-            aria-label="Close navigation menu"
+            aria-label="إغلاق قائمة التنقل"
             onClick={() => setIsMenuOpen(false)}
             className="absolute inset-0 bg-black/70"
           />
 
           <aside className="bg-white/10 backdrop-blur-md border border-white/20 absolute left-4 right-4 top-4 z-50 rounded-[30px] p-4 text-white shadow-2xl">
             <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-white">Navigation</p>
-                <p className="mt-2 text-lg font-black text-white">{driver.fullName}</p>
-              </div>
-
               <button
                 type="button"
-                aria-label="Close menu"
+                aria-label="إغلاق القائمة"
                 onClick={() => setIsMenuOpen(false)}
                 className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/20 bg-black/30 text-white"
               >
                 <CloseIcon />
               </button>
+
+              <div className="text-right">
+                <p className="text-xs font-bold tracking-[0.18em] text-white">القائمة</p>
+                <p className="mt-2 text-lg font-black text-white">{driver.fullName}</p>
+              </div>
             </div>
 
             <nav className="mt-5 flex flex-col gap-3">
@@ -118,17 +114,17 @@ export default function DriverDashboard({
                     key={item.id}
                     type="button"
                     onClick={() => handleNavigate(item.id)}
-                    className={`flex min-h-14 items-center gap-3 rounded-2xl border px-4 text-left ${
+                    className={`flex min-h-14 items-center justify-between gap-3 rounded-2xl border px-4 text-right ${
                       isActive
                         ? "border-white bg-white text-black"
                         : "border-white/20 bg-black/25 text-white"
                     }`}
                   >
-                    <span className={isActive ? "text-black" : "text-white"}>
-                      {item.icon ?? <NavDot />}
-                    </span>
                     <span className={`text-base font-black ${isActive ? "text-black" : "text-white"}`}>
                       {item.label}
+                    </span>
+                    <span className={isActive ? "text-black" : "text-white"}>
+                      {item.icon ?? <NavDot />}
                     </span>
                   </button>
                 );
@@ -140,7 +136,7 @@ export default function DriverDashboard({
               onClick={onSignOut}
               className="mt-4 min-h-14 w-full rounded-2xl border border-white/20 bg-black/30 px-4 text-base font-black text-white"
             >
-              Sign Out
+              تسجيل الخروج
             </button>
           </aside>
         </div>
@@ -159,8 +155,8 @@ function StatCard({
   helper: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-white/20 bg-black/25 p-4">
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-white">{label}</p>
+    <div className="rounded-[24px] border border-white/20 bg-black/25 p-4 text-right">
+      <p className="text-xs font-bold tracking-[0.08em] text-white">{label}</p>
       <p className="mt-3 text-3xl font-black text-white">{value}</p>
       <p className="mt-2 text-sm font-semibold text-white">{helper}</p>
     </div>

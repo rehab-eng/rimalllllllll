@@ -9,8 +9,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-manrope);
-  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-cairo);
+  --font-serif: var(--font-tajawal);
 }
 
 * {
@@ -19,6 +19,7 @@
 
 html {
   min-height: 100%;
+  direction: rtl;
 }
 
 body {
@@ -29,8 +30,9 @@ body {
     linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 26%),
     linear-gradient(155deg, #030712 0%, #111827 42%, #1f2937 100%);
   color: var(--foreground);
-  font-family: var(--font-manrope), Arial, Helvetica, sans-serif;
+  font-family: var(--font-cairo), Arial, Helvetica, sans-serif;
   position: relative;
+  text-align: right;
 }
 
 body::before {
@@ -54,5 +56,12 @@ a {
 h1,
 h2,
 h3 {
-  font-family: var(--font-playfair), Georgia, serif;
+  font-family: var(--font-tajawal), Arial, Helvetica, sans-serif;
+}
+
+input,
+select,
+button,
+textarea {
+  font: inherit;
 }

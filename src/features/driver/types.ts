@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { DriverStatus, FuelLogStatus, FuelType } from "../../generated/prisma/client";
+import type { DriverStatus, FuelType } from "../../generated/prisma/client";
 
 export type ActionResult<T = void> = {
   success: boolean;
@@ -30,8 +30,8 @@ export type DriverStationSummary = {
 export type DriverFuelHistoryItem = {
   id: number;
   liters: number;
-  fuelType: FuelType;
-  status: FuelLogStatus;
+  fuelType: string;
+  status: string;
   date: string;
   stationName?: string | null;
   vehiclePlates: string;

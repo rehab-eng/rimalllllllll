@@ -1,9 +1,8 @@
 import { revalidatePath } from "next/cache";
+import { connection } from "next/server";
 
-import {
-  deleteDriverAccount,
-  updateDriverStatus,
-} from "../../actions/driver.actions";
+import SystemStatusCard from "../../components/SystemStatusCard";
+import { deleteDriverAccount, updateDriverStatus } from "../../actions/driver.actions";
 import { saveStation, toggleStationActivity } from "../../actions/station.actions";
 import AdminDashboard from "../../features/admin/AdminDashboard";
 import AdminDataTable from "../../features/admin/AdminDataTable";
@@ -17,7 +16,7 @@ import type {
 } from "../../features/admin/types";
 import type { ActionResult } from "../../features/driver/types";
 import { DriverStatus } from "../../generated/prisma/client";
-import SystemStatusCard from "../../components/SystemStatusCard";
+import { formatArabicNumber } from "../../lib/labels";
 import { getPrisma, isDatabaseConfigured } from "../../lib/prisma";
 import { getStationRuntimeStatus } from "../../lib/station-status";
 
@@ -28,13 +27,15 @@ const pageBackground =
   "min-h-screen bg-[radial-gradient(circle_at_top,rgba(245,245,244,0.14),transparent_22%),radial-gradient(circle_at_bottom_left,rgba(82,82,91,0.16),transparent_30%),linear-gradient(135deg,#030712_0%,#111827_45%,#1f2937_100%)]";
 
 export default async function AdminPage() {
+  await connection();
+
   if (!isDatabaseConfigured()) {
     return (
       <main className={pageBackground}>
         <SystemStatusCard
           title="المنظومة غير مهيأة بعد"
-          description="صفحة الإدارة تحتاج اتصالًا بقاعدة البيانات، لكن متغير DATABASE_URL غير موجود داخل إعدادات الاستضافة."
-          details="أضف DATABASE_URL في Cloudflare Pages ثم أعد النشر."
+          description="لوحة الإدارة تحتاج اتصالًا بقاعدة البيانات، لكن متغير DATABASE_URL غير موجود داخل إعدادات الاستضافة."
+          details="أضف DATABASE_URL في Cloudflare Workers، وضعه أيضًا في Build Variables and Secrets، ثم أعد النشر."
         />
       </main>
     );
@@ -265,26 +266,28 @@ export default async function AdminPage() {
     return (
       <main className={pageBackground}>
         <AdminDashboard
-          adminName="Operations Admin"
+          adminName="مدير المنظومة"
           initialTotalLogsToday={totalLogsToday}
           stats={[
             {
               id: "drivers",
-              label: "Drivers",
+              label: "السائقون",
               value: driverRows.length,
-              hint: "Tracked driver accounts",
+              hint: "عدد الحسابات المسجلة",
             },
             {
               id: "stations",
-              label: "Stations",
+              label: "المحطات",
               value: stationRows.length,
-              hint: `${stationRows.filter((station) => station.runtimeStatus === "OPEN").length} open right now`,
+              hint: `${formatArabicNumber(
+                stationRows.filter((station) => station.runtimeStatus === "OPEN").length,
+              )} محطة مفتوحة الآن`,
             },
             {
               id: "logs",
-              label: "Total Logs",
+              label: "سجلات التعبئة",
               value: fuelLogs.length,
-              hint: "All recorded fuel confirmations",
+              hint: "جميع التأكيدات المسجلة",
             },
           ]}
         >
@@ -304,7 +307,7 @@ export default async function AdminPage() {
 
             <AdminDataTable
               fuelLogs={tableRows}
-              exportDriverName="All Drivers"
+              exportDriverName="كل السائقين"
               onSuspendDriver={handleSuspendDriver}
               onActivateDriver={handleActivateDriver}
               onDeleteDriver={handleDeleteDriver}
@@ -314,7 +317,7 @@ export default async function AdminPage() {
       </main>
     );
   } catch (error) {
-    const details = error instanceof Error ? error.message : "Unexpected server error.";
+    const details = error instanceof Error ? error.message : "حدث خطأ غير متوقع.";
 
     return (
       <main className={pageBackground}>

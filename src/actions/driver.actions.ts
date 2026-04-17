@@ -112,17 +112,17 @@ const generateDriverCode = (): string => {
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
-      return "Driver code or phone already exists.";
+      return "رمز السائق أو رقم الهاتف مستخدم من قبل.";
     }
 
-    return "Database operation failed.";
+    return "فشلت عملية قاعدة البيانات.";
   }
 
   if (error instanceof Error) {
     return error.message;
   }
 
-  return "Unexpected error occurred.";
+  return "حدث خطأ غير متوقع.";
 };
 
 export async function registerDriverWithVehicle(
@@ -158,21 +158,21 @@ export async function registerDriverWithVehicle(
     ) {
       return {
         success: false,
-        error: "Driver and vehicle required fields must be provided.",
+        error: "يجب إدخال البيانات الأساسية للسائق والمركبة.",
       };
     }
 
     if (!driverData.license_url && !driverData.license_number) {
       return {
         success: false,
-        error: "Provide either a license image or a license number.",
+        error: "أدخل صورة الرخصة أو رقم الرخصة.",
       };
     }
 
     if (!Number.isFinite(Number(vehicleData.truck_volume)) || Number(vehicleData.truck_volume) <= 0) {
       return {
         success: false,
-        error: "Truck volume must be greater than zero.",
+        error: "سعة الشاحنة يجب أن تكون أكبر من صفر.",
       };
     }
 
@@ -219,7 +219,7 @@ export async function getDriverDashboardStatsByCode(
     if (!normalizedCode) {
       return {
         success: false,
-        error: "Driver code is required.",
+        error: "رمز السائق مطلوب.",
       };
     }
 
@@ -234,7 +234,7 @@ export async function getDriverDashboardStatsByCode(
     if (!driver) {
       return {
         success: false,
-        error: "Driver not found.",
+        error: "السائق غير موجود.",
       };
     }
 

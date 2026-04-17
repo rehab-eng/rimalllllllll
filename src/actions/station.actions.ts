@@ -28,17 +28,22 @@ const trimText = (value: string | undefined | null): string => (value ?? "").tri
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    return "Database operation failed.";
+    return "فشلت عملية قاعدة البيانات.";
   }
 
   if (error instanceof Error) {
     return error.message;
   }
 
-  return "Unexpected error occurred.";
+  return "حدث خطأ غير متوقع.";
 };
 
 const isTimeValue = (value: string): boolean => /^\d{2}:\d{2}$/.test(value);
+const toMinutes = (value: string): number => {
+  const [hours, minutes] = value.split(":").map(Number);
+
+  return hours * 60 + minutes;
+};
 
 export async function saveStation(
   input: SaveStationInput,
@@ -59,14 +64,25 @@ export async function saveStation(
     if (!name) {
       return {
         success: false,
-        error: "Station name is required.",
+        error: "اسم المحطة مطلوب.",
       };
     }
 
-    if (schedules.some((schedule) => !isTimeValue(schedule.opens_at) || !isTimeValue(schedule.closes_at))) {
+    if (
+      schedules.some(
+        (schedule) => !isTimeValue(schedule.opens_at) || !isTimeValue(schedule.closes_at),
+      )
+    ) {
       return {
         success: false,
-        error: "Every enabled schedule must include valid open and close times.",
+        error: "يجب إدخال وقت افتتاح ووقت إغلاق صالحين لكل يوم مفعّل.",
+      };
+    }
+
+    if (schedules.some((schedule) => toMinutes(schedule.opens_at) >= toMinutes(schedule.closes_at))) {
+      return {
+        success: false,
+        error: "وقت الإغلاق يجب أن يكون بعد وقت الافتتاح.",
       };
     }
 

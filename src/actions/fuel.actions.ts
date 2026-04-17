@@ -53,17 +53,17 @@ type FuelLogWithRelations = Prisma.FuelLogGetPayload<typeof fuelLogArgs>;
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2003") {
-      return "Driver, vehicle, or station reference is invalid.";
+      return "مرجع السائق أو المركبة أو المحطة غير صالح.";
     }
 
-    return "Database operation failed.";
+    return "فشلت عملية قاعدة البيانات.";
   }
 
   if (error instanceof Error) {
     return error.message;
   }
 
-  return "Unexpected error occurred.";
+  return "حدث خطأ غير متوقع.";
 };
 
 export async function logFuelEntry(
@@ -75,14 +75,14 @@ export async function logFuelEntry(
     if (!Number.isInteger(input.driverId) || input.driverId <= 0) {
       return {
         success: false,
-        error: "A valid driver is required.",
+        error: "يجب اختيار سائق صالح.",
       };
     }
 
     if (!Number.isInteger(input.vehicleId) || input.vehicleId <= 0) {
       return {
         success: false,
-        error: "A valid vehicle is required.",
+        error: "يجب اختيار مركبة صالحة.",
       };
     }
 
@@ -91,14 +91,14 @@ export async function logFuelEntry(
     if (!Number.isInteger(rawStationId) || Number(rawStationId) <= 0) {
       return {
         success: false,
-        error: "Choose an active station first.",
+        error: "اختر محطة فعالة أولًا.",
       };
     }
 
     if (!Number.isFinite(Number(input.liters)) || Number(input.liters) <= 0) {
       return {
         success: false,
-        error: "Liters must be greater than zero.",
+        error: "يجب أن تكون كمية اللترات أكبر من صفر.",
       };
     }
 
@@ -107,7 +107,7 @@ export async function logFuelEntry(
     if (Number.isNaN(fuelLogDate.getTime())) {
       return {
         success: false,
-        error: "Fuel log date is invalid.",
+        error: "تاريخ تعبئة الوقود غير صالح.",
       };
     }
 
@@ -138,11 +138,11 @@ export async function logFuelEntry(
       ]);
 
       if (!vehicle) {
-        throw new Error("The selected vehicle does not belong to the driver.");
+        throw new Error("المركبة المختارة لا تتبع هذا السائق.");
       }
 
       if (!station) {
-        throw new Error("The selected station was not found.");
+        throw new Error("المحطة المختارة غير موجودة.");
       }
 
       const stationStatus = getStationRuntimeStatus(
@@ -156,8 +156,8 @@ export async function logFuelEntry(
       if (stationStatus !== "OPEN") {
         throw new Error(
           stationStatus === "INACTIVE"
-            ? "This station is currently inactive."
-            : "This station is currently closed.",
+            ? "هذه المحطة غير فعالة حاليًا."
+            : "هذه المحطة مغلقة الآن وخارج ساعات العمل.",
         );
       }
 
@@ -183,7 +183,7 @@ export async function logFuelEntry(
       return {
         success: true,
         data: fuelLog,
-        error: "Fuel log created, but real-time notification failed.",
+        error: "تم حفظ التعبئة لكن الإشعار اللحظي لم يعمل.",
       };
     }
 

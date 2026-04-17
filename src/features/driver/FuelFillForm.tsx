@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 
 import type { FuelType } from "../../generated/prisma/client";
+import { formatArabicNumber, fuelTypeLabels, stationRuntimeStatusLabels } from "../../lib/labels";
 import type {
   ActionResult,
   FuelFillPayload,
@@ -56,7 +57,7 @@ export default function FuelFillForm({
     if (!selectedVehicle) {
       setFeedback({
         kind: "error",
-        text: "Choose a vehicle first.",
+        text: "اختر المركبة أولًا.",
       });
       return;
     }
@@ -64,7 +65,7 @@ export default function FuelFillForm({
     if (!selectedStation || selectedStation.runtimeStatus !== "OPEN") {
       setFeedback({
         kind: "error",
-        text: "Choose a station that is open now.",
+        text: "لا يمكن تأكيد التعبئة إلا من محطة مفتوحة ضمن ساعات العمل الحالية.",
       });
       return;
     }
@@ -80,7 +81,7 @@ export default function FuelFillForm({
       if (!result.success) {
         setFeedback({
           kind: "error",
-          text: result.error ?? "Unable to confirm this fuel fill.",
+          text: result.error ?? "تعذر تأكيد عملية التعبئة.",
         });
         return;
       }
@@ -89,8 +90,8 @@ export default function FuelFillForm({
         kind: "success",
         text:
           fuelType === "DIESEL"
-            ? "Diesel receipt was confirmed successfully."
-            : "Gasoline receipt was confirmed successfully.",
+            ? "تم تأكيد استلام الديزل بنجاح."
+            : "تم تأكيد استلام البنزين بنجاح.",
       });
     });
   };
@@ -98,21 +99,23 @@ export default function FuelFillForm({
   return (
     <form onSubmit={handleSubmit} className="mx-auto w-full max-w-md text-white">
       <section className="bg-white/10 backdrop-blur-md border border-white/20 rounded-[28px] p-5 shadow-2xl">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-white">Fuel Confirmation</p>
-        <h2 className="mt-2 text-3xl font-black text-white">I Got Fuel</h2>
+        <p className="text-xs font-bold tracking-[0.16em] text-white">تأكيد التعبئة</p>
+        <h2 className="mt-2 text-3xl font-black text-white">استلمت الوقود</h2>
 
-        <div className="mt-5 rounded-[24px] border border-white/20 bg-black/25 p-4">
-          <p className="text-sm font-bold text-white">Selected Truck</p>
+        <div className="mt-5 rounded-[24px] border border-white/20 bg-black/25 p-4 text-right">
+          <p className="text-sm font-bold text-white">المركبة والمحطة المختارتان</p>
           <p className="mt-2 text-xl font-black text-white">
-            {selectedVehicle ? selectedVehicle.platesNumber : "No vehicle selected"}
+            {selectedVehicle ? selectedVehicle.platesNumber : "لم يتم اختيار مركبة"}
           </p>
           <p className="mt-1 text-sm font-semibold text-white">
-            {selectedStation ? `${selectedStation.name}${selectedStation.location ? ` - ${selectedStation.location}` : ""}` : "No station selected"}
+            {selectedStation
+              ? `${selectedStation.name}${selectedStation.location ? ` - ${selectedStation.location}` : ""}`
+              : "لم يتم اختيار محطة"}
           </p>
         </div>
 
         <div className="mt-5">
-          <Label title="Choose Vehicle" />
+          <Label title="اختر المركبة" />
           <div className="mt-3 grid gap-3">
             {vehicles.map((vehicle, index) => {
               const isSelected = String(vehicle.id) === selectedVehicleId;
@@ -122,14 +125,14 @@ export default function FuelFillForm({
                   key={vehicle.id}
                   type="button"
                   onClick={() => setSelectedVehicleId(String(vehicle.id))}
-                  className={`min-h-18 rounded-[24px] border p-4 text-left ${
+                  className={`min-h-18 rounded-[24px] border p-4 text-right ${
                     isSelected
                       ? "border-white bg-white text-black"
                       : "border-white/20 bg-black/25 text-white"
                   }`}
                 >
                   <p className={`text-sm font-black ${isSelected ? "text-black" : "text-white"}`}>
-                    {`Vehicle ${index + 1}`}
+                    {`المركبة ${index + 1}`}
                   </p>
                   <p className={`mt-2 text-xl font-black ${isSelected ? "text-black" : "text-white"}`}>
                     {vehicle.platesNumber}
@@ -144,7 +147,10 @@ export default function FuelFillForm({
         </div>
 
         <div className="mt-5">
-          <Label title="Choose Station" />
+          <Label title="اختر المحطة" />
+          <p className="mt-2 text-sm font-semibold text-white">
+            يسمح بالتأكيد فقط إذا كان الوقت الحالي داخل ساعات عمل المحطة.
+          </p>
           <div className="mt-3 grid gap-3">
             {stations.map((station) => {
               const isSelected = String(station.id) === selectedStationId;
@@ -155,21 +161,13 @@ export default function FuelFillForm({
                   key={station.id}
                   type="button"
                   onClick={() => setSelectedStationId(String(station.id))}
-                  className={`rounded-[24px] border p-4 text-left ${
+                  className={`rounded-[24px] border p-4 text-right ${
                     isSelected
                       ? "border-white bg-white text-black"
                       : "border-white/20 bg-black/25 text-white"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className={`text-base font-black ${isSelected ? "text-black" : "text-white"}`}>
-                        {station.name}
-                      </p>
-                      <p className={`mt-1 text-sm font-semibold ${isSelected ? "text-black" : "text-white"}`}>
-                        {station.location || "No location specified"}
-                      </p>
-                    </div>
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-black ${
                         isSelected
@@ -179,8 +177,17 @@ export default function FuelFillForm({
                             : "border border-white/20 bg-black/35 text-white"
                       }`}
                     >
-                      {station.runtimeStatus}
+                      {stationRuntimeStatusLabels[station.runtimeStatus]}
                     </span>
+
+                    <div className="text-right">
+                      <p className={`text-base font-black ${isSelected ? "text-black" : "text-white"}`}>
+                        {station.name}
+                      </p>
+                      <p className={`mt-1 text-sm font-semibold ${isSelected ? "text-black" : "text-white"}`}>
+                        {station.location || "لم يتم تحديد موقع"}
+                      </p>
+                    </div>
                   </div>
                 </button>
               );
@@ -189,17 +196,17 @@ export default function FuelFillForm({
         </div>
 
         <div className="mt-5">
-          <Label title="Choose Fuel Type" />
+          <Label title="نوع الوقود" />
           <div className="mt-3 grid grid-cols-2 gap-3">
             <FuelTypeCard
               isActive={fuelType === "DIESEL"}
-              label="Diesel"
+              label="ديزل"
               helper="نافطة / ديزل"
               onClick={() => setFuelType("DIESEL")}
             />
             <FuelTypeCard
               isActive={fuelType === "GASOLINE"}
-              label="Gasoline"
+              label="بنزين"
               helper="بنزين"
               onClick={() => setFuelType("GASOLINE")}
             />
@@ -207,7 +214,7 @@ export default function FuelFillForm({
         </div>
 
         <div className="mt-5">
-          <Label title="Choose Liters" />
+          <Label title="كمية اللترات" />
           <div className="mt-3 grid grid-cols-2 gap-3">
             {literOptions.map((option) => {
               const isActive = liters === option;
@@ -223,11 +230,11 @@ export default function FuelFillForm({
                       : "border-white/20 bg-black/25 text-white"
                   }`}
                 >
-                  <span className={`block text-3xl font-black ${isActive ? "text-black" : "text-white"}`}>
-                    {option}
+                    <span className={`block text-3xl font-black ${isActive ? "text-black" : "text-white"}`}>
+                    {formatArabicNumber(option)}
                   </span>
                   <span className={`mt-1 block text-sm font-bold ${isActive ? "text-black" : "text-white"}`}>
-                    Liters
+                    لتر
                   </span>
                 </button>
               );
@@ -254,7 +261,11 @@ export default function FuelFillForm({
           disabled={isPending || !vehicles.length || !stations.length}
           className="mt-5 min-h-20 w-full rounded-[28px] border border-white bg-white px-5 text-xl font-black text-black disabled:cursor-not-allowed disabled:border-white/50 disabled:bg-white/60"
         >
-          {isPending ? "Saving..." : fuelType === "DIESEL" ? "I Got Diesel" : "I Got Gasoline"}
+          {isPending
+            ? "جارٍ الحفظ..."
+            : fuelType === "DIESEL"
+              ? `تم استلام ${fuelTypeLabels.DIESEL}`
+              : `تم استلام ${fuelTypeLabels.GASOLINE}`}
         </button>
       </section>
     </form>
@@ -280,7 +291,7 @@ function FuelTypeCard({
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-20 rounded-[24px] border p-4 text-left ${
+      className={`min-h-20 rounded-[24px] border p-4 text-right ${
         isActive ? "border-white bg-white text-black" : "border-white/20 bg-black/25 text-white"
       }`}
     >

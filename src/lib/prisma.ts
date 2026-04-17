@@ -2,10 +2,16 @@ import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../generated/prisma/client";
 
 export const isDatabaseConfigured = (): boolean =>
-  Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim());
+  Boolean(getDatabaseUrl()?.trim());
+
+const getDatabaseUrl = (): string | undefined => {
+  const runtimeEnv = process.env;
+
+  return runtimeEnv.DATABASE_URL;
+};
 
 const createPrismaClient = (): PrismaClient => {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = getDatabaseUrl();
   if (!connectionString) {
     throw new Error("Missing environment variable: DATABASE_URL");
   }

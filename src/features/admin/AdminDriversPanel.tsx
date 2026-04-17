@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 
+import { driverStatusLabels, formatArabicNumber } from "../../lib/labels";
 import type { ActionResult } from "../driver/types";
 import type { AdminDriverRow } from "./types";
 
@@ -27,18 +28,19 @@ export default function AdminDriversPanel({
   ) => {
     startTransition(async () => {
       const result = await action();
-      setFeedback(result.success ? successMessage : result.error ?? "Action failed.");
+      setFeedback(result.success ? successMessage : result.error ?? "فشلت العملية.");
     });
   };
 
   return (
     <section className="bg-white/10 backdrop-blur-md border border-white/20 rounded-[32px] p-6 text-white shadow-2xl lg:p-8">
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-bold uppercase tracking-[0.18em] text-white">Account Controls</p>
-          <h2 className="mt-2 text-3xl font-black text-white">Driver Accounts</h2>
+        {feedback ? <p className="text-sm font-bold text-white">{feedback}</p> : <span />}
+
+        <div className="text-right">
+          <p className="text-sm font-bold tracking-[0.16em] text-white">التحكم في الحسابات</p>
+          <h2 className="mt-2 text-3xl font-black text-white">حسابات السائقين</h2>
         </div>
-        {feedback ? <p className="text-sm font-bold text-white">{feedback}</p> : null}
       </div>
 
       <div className="mt-6 grid gap-3 lg:grid-cols-2">
@@ -46,23 +48,24 @@ export default function AdminDriversPanel({
           const canActivate = driver.status === "SUSPENDED";
 
           return (
-            <div key={driver.id} className="rounded-[28px] border border-white/20 bg-black/25 p-5">
+            <div key={driver.id} className="rounded-[28px] border border-white/20 bg-black/25 p-5 text-right">
               <div className="flex items-start justify-between gap-4">
+                <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1 text-xs font-black text-white">
+                  {driverStatusLabels[driver.status]}
+                </span>
+
                 <div>
                   <p className="text-lg font-black text-white">{driver.fullName}</p>
                   <p className="mt-1 text-sm font-semibold text-white">
-                    {driver.code} · {driver.phone}
+                    {driver.code} - {driver.phone}
                   </p>
                 </div>
-                <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1 text-xs font-black text-white">
-                  {driver.status}
-                </span>
               </div>
 
               <div className="mt-4 grid grid-cols-3 gap-3">
-                <MiniStat label="Vehicles" value={driver.vehicleCount} />
-                <MiniStat label="Logs" value={driver.totalFuelLogs} />
-                <MiniStat label="Liters" value={driver.totalFilledLiters} />
+                <MiniStat label="المركبات" value={driver.vehicleCount} />
+                <MiniStat label="السجلات" value={driver.totalFuelLogs} />
+                <MiniStat label="اللترات" value={driver.totalFilledLiters} />
               </div>
 
               <div className="mt-4 flex gap-3">
@@ -75,12 +78,12 @@ export default function AdminDriversPanel({
                         canActivate
                           ? onActivateDriver(driver.id)
                           : onSuspendDriver(driver.id),
-                      canActivate ? "Driver reactivated." : "Driver suspended.",
+                      canActivate ? "تمت إعادة تفعيل السائق." : "تم إيقاف السائق.",
                     )
                   }
                   className="min-h-12 flex-1 rounded-2xl border border-white bg-white px-4 text-sm font-black text-black disabled:opacity-60"
                 >
-                  {canActivate ? "Activate" : "Suspend"}
+                  {canActivate ? "تفعيل" : "إيقاف"}
                 </button>
 
                 <button
@@ -89,12 +92,12 @@ export default function AdminDriversPanel({
                   onClick={() =>
                     runAction(
                       () => onDeleteDriver(driver.id),
-                      "Driver account marked as deleted.",
+                      "تم تعليم حساب السائق كمحذوف.",
                     )
                   }
                   className="min-h-12 rounded-2xl border border-red-500 bg-red-600 px-4 text-sm font-black text-white disabled:opacity-60"
                 >
-                  Delete
+                  حذف
                 </button>
               </div>
             </div>
@@ -113,9 +116,9 @@ function MiniStat({
   value: number;
 }) {
   return (
-    <div className="rounded-2xl border border-white/20 bg-black/30 p-3">
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-white">{label}</p>
-      <p className="mt-2 text-2xl font-black text-white">{value}</p>
+    <div className="rounded-2xl border border-white/20 bg-black/30 p-3 text-right">
+      <p className="text-xs font-bold tracking-[0.08em] text-white">{label}</p>
+      <p className="mt-2 text-2xl font-black text-white">{formatArabicNumber(value)}</p>
     </div>
   );
 }

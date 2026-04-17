@@ -3,9 +3,16 @@
 import type { ReactNode } from "react";
 import { useState, useTransition } from "react";
 
-import type { ActionResult } from "../driver/types";
-import { exportFuelLogsToExcel } from "../../lib/exportExcel";
 import type { FuelLogStatus } from "../../generated/prisma/client";
+import {
+  driverStatusLabels,
+  formatArabicDateTime,
+  formatArabicNumber,
+  fuelLogStatusLabels,
+  fuelTypeLabels,
+} from "../../lib/labels";
+import { exportFuelLogsToExcel } from "../../lib/exportExcel";
+import type { ActionResult } from "../driver/types";
 import type { AdminFuelLogRow } from "./types";
 
 type AdminDataTableProps = {
@@ -22,25 +29,9 @@ const statusStyles: Record<FuelLogStatus, string> = {
   REJECTED: "bg-red-600 text-white",
 };
 
-const formatDate = (value: Date | string): string => {
-  const date = value instanceof Date ? value : new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-};
-
 export default function AdminDataTable({
   fuelLogs,
-  exportDriverName = "All Drivers",
+  exportDriverName = "كل السائقين",
   onSuspendDriver,
   onActivateDriver,
   onDeleteDriver,
@@ -50,7 +41,11 @@ export default function AdminDataTable({
 
   const handleExport = () => {
     const result = exportFuelLogsToExcel(fuelLogs, exportDriverName);
-    setFeedback(result.success ? `Exported ${result.data?.fileName ?? "file"}.` : result.error ?? "Export failed.");
+    setFeedback(
+      result.success
+        ? `تم تصدير الملف ${result.data?.fileName ?? ""}.`
+        : result.error ?? "فشل التصدير.",
+    );
   };
 
   const runDriverAction = (
@@ -59,21 +54,13 @@ export default function AdminDataTable({
   ) => {
     startTransition(async () => {
       const result = await action();
-      setFeedback(result.success ? successMessage : result.error ?? "Action failed.");
+      setFeedback(result.success ? successMessage : result.error ?? "فشلت العملية.");
     });
   };
 
   return (
     <section className="bg-white/10 backdrop-blur-md border border-white/20 rounded-[32px] p-6 text-white shadow-2xl lg:p-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-sm font-bold uppercase tracking-[0.18em] text-white">Fuel Operations</p>
-          <h2 className="mt-2 text-3xl font-black text-white">Driver Fill Records</h2>
-          <p className="mt-2 text-sm font-semibold text-white">
-            Review all fills, station usage, fuel types, and use wider account powers per row.
-          </p>
-        </div>
-
         <div className="flex flex-col items-start gap-3 lg:items-end">
           <button
             type="button"
@@ -81,9 +68,17 @@ export default function AdminDataTable({
             className="inline-flex min-h-14 items-center gap-3 rounded-2xl border border-white bg-white px-5 text-base font-black text-black"
           >
             <ExportIcon />
-            Export to Excel
+            تصدير إلى إكسل
           </button>
           {feedback ? <p className="text-sm font-bold text-white">{feedback}</p> : null}
+        </div>
+
+        <div className="text-right">
+          <p className="text-sm font-bold tracking-[0.16em] text-white">سجل التعبئة</p>
+          <h2 className="mt-2 text-3xl font-black text-white">سجلات السائقين</h2>
+          <p className="mt-2 text-sm font-semibold text-white">
+            راجع التعبئات والمحطات وأنواع الوقود وتحكم في حالة الحساب مباشرة من كل صف.
+          </p>
         </div>
       </div>
 
@@ -91,17 +86,17 @@ export default function AdminDataTable({
         <table className="min-w-[1420px] w-full border-separate border-spacing-0">
           <thead className="bg-black/40">
             <tr>
-              <HeaderCell>Driver</HeaderCell>
-              <HeaderCell>Phone</HeaderCell>
-              <HeaderCell>Status</HeaderCell>
-              <HeaderCell>Truck Plates</HeaderCell>
-              <HeaderCell>Truck Type</HeaderCell>
-              <HeaderCell>Station</HeaderCell>
-              <HeaderCell>Fuel Type</HeaderCell>
-              <HeaderCell>Liters</HeaderCell>
-              <HeaderCell>Log Status</HeaderCell>
-              <HeaderCell>Date</HeaderCell>
-              <HeaderCell align="right">Account Powers</HeaderCell>
+              <HeaderCell>السائق</HeaderCell>
+              <HeaderCell>الهاتف</HeaderCell>
+              <HeaderCell>الحالة</HeaderCell>
+              <HeaderCell>لوحة الشاحنة</HeaderCell>
+              <HeaderCell>نوع الشاحنة</HeaderCell>
+              <HeaderCell>المحطة</HeaderCell>
+              <HeaderCell>نوع الوقود</HeaderCell>
+              <HeaderCell>اللترات</HeaderCell>
+              <HeaderCell>حالة السجل</HeaderCell>
+              <HeaderCell>التاريخ</HeaderCell>
+              <HeaderCell align="left">الإجراءات</HeaderCell>
             </tr>
           </thead>
 
@@ -109,7 +104,7 @@ export default function AdminDataTable({
             {fuelLogs.length === 0 ? (
               <tr>
                 <td colSpan={11} className="px-6 py-10 text-center text-base font-bold text-white">
-                  No fuel logs available yet.
+                  لا توجد سجلات تعبئة بعد.
                 </td>
               </tr>
             ) : (
@@ -120,29 +115,29 @@ export default function AdminDataTable({
                   <tr key={row.id} className="bg-black/20">
                     <BodyCell>
                       <p className="text-base font-black text-white">{row.driver.full_name}</p>
-                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-white">
-                        {row.driver.code}
-                      </p>
+                      <p className="mt-1 text-xs font-bold tracking-[0.08em] text-white">{row.driver.code}</p>
                     </BodyCell>
                     <BodyCell>{row.driver.phone}</BodyCell>
                     <BodyCell>
                       <span className="inline-flex rounded-full border border-white/20 bg-black/30 px-3 py-2 text-xs font-black text-white">
-                        {row.driver.status}
+                        {driverStatusLabels[row.driver.status]}
                       </span>
                     </BodyCell>
                     <BodyCell>{row.vehicle.plates_number}</BodyCell>
                     <BodyCell>{row.vehicle.truck_type}</BodyCell>
                     <BodyCell>{row.station?.name ?? "-"}</BodyCell>
-                    <BodyCell>{row.fuel_type}</BodyCell>
-                    <BodyCell>{String(row.liters)} L</BodyCell>
+                    <BodyCell>{fuelTypeLabels[row.fuel_type]}</BodyCell>
+                    <BodyCell>{formatArabicNumber(Number(row.liters))} لتر</BodyCell>
                     <BodyCell>
-                      <span className={`inline-flex rounded-full px-3 py-2 text-sm font-black ${statusStyles[row.status]}`}>
-                        {row.status}
+                      <span
+                        className={`inline-flex rounded-full px-3 py-2 text-sm font-black ${statusStyles[row.status]}`}
+                      >
+                        {fuelLogStatusLabels[row.status]}
                       </span>
                     </BodyCell>
-                    <BodyCell>{formatDate(row.date)}</BodyCell>
-                    <BodyCell align="right">
-                      <div className="flex justify-end gap-3">
+                    <BodyCell>{formatArabicDateTime(row.date)}</BodyCell>
+                    <BodyCell align="left">
+                      <div className="flex justify-start gap-3">
                         <button
                           type="button"
                           onClick={() =>
@@ -151,13 +146,13 @@ export default function AdminDataTable({
                                 canActivate
                                   ? onActivateDriver(row.driver.id)
                                   : onSuspendDriver(row.driver.id),
-                              canActivate ? "Driver reactivated." : "Driver suspended.",
+                              canActivate ? "تمت إعادة تفعيل السائق." : "تم إيقاف السائق.",
                             )
                           }
                           disabled={isPending}
                           className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white bg-white px-4 text-sm font-black text-black disabled:opacity-60"
                         >
-                          {canActivate ? "Activate" : "Suspend"}
+                          {canActivate ? "تفعيل" : "إيقاف"}
                         </button>
 
                         <button
@@ -165,12 +160,12 @@ export default function AdminDataTable({
                           onClick={() =>
                             runDriverAction(
                               () => onDeleteDriver(row.driver.id),
-                              "Driver account marked as deleted.",
+                              "تم تعليم حساب السائق كمحذوف.",
                             )
                           }
                           disabled={isPending}
                           className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-red-500 bg-red-600 text-white disabled:opacity-60"
-                          aria-label={`Delete driver ${row.driver.full_name}`}
+                          aria-label={`حذف السائق ${row.driver.full_name}`}
                         >
                           <DeleteIcon />
                         </button>
@@ -189,14 +184,14 @@ export default function AdminDataTable({
 
 function HeaderCell({
   children,
-  align = "left",
+  align = "right",
 }: {
   children: ReactNode;
   align?: "left" | "right";
 }) {
   return (
     <th
-      className={`px-6 py-4 text-sm font-black uppercase tracking-[0.12em] text-white ${
+      className={`px-6 py-4 text-sm font-black tracking-[0.08em] text-white ${
         align === "right" ? "text-right" : "text-left"
       }`}
     >
@@ -207,7 +202,7 @@ function HeaderCell({
 
 function BodyCell({
   children,
-  align = "left",
+  align = "right",
 }: {
   children: ReactNode;
   align?: "left" | "right";
