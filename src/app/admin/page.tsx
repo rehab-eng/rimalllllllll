@@ -314,15 +314,16 @@ export default async function AdminPage() {
       </main>
     );
   } catch (error) {
-    const details = error instanceof Error ? error.message : "حدث خطأ غير متوقع.";
+    const details = error instanceof Error ? error.message : String(error);
 
     return (
-      <main className={pageBackground}>
-        <SystemStatusCard
-          title="تعذر تحميل لوحة الإدارة"
-          description="حدث خطأ أثناء تحميل بيانات الإدارة من الخادم. غالبًا الاتصال بقاعدة البيانات غير متاح داخل الاستضافة."
-          details={details}
-        />
+      <main style={{ minHeight: "100vh", background: "#111", color: "#fff", padding: "16px" }}>
+        <h1 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "12px" }}>
+          Admin Page Runtime Error
+        </h1>
+        <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "14px" }}>
+          {details}
+        </pre>
       </main>
     );
   }
