@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 
+import { exportDriversToCsv } from "../../lib/exportDriversCsv";
 import { driverStatusLabels, formatArabicNumber } from "../../lib/labels";
 import type { ActionResult } from "../driver/types";
 import type { AdminDriverRow } from "./types";
@@ -33,6 +34,15 @@ export default function AdminDriversPanel({
     });
   };
 
+  const handleExport = () => {
+    const result = exportDriversToCsv(drivers);
+    setFeedback(
+      result.success
+        ? `تم تنزيل الملف ${result.data?.fileName ?? ""}.`
+        : result.error ?? "تعذر تصدير بيانات السائقين.",
+    );
+  };
+
   return (
     <>
       <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
@@ -45,7 +55,16 @@ export default function AdminDriversPanel({
             </p>
           </div>
 
-          {feedback ? <p className="text-sm font-black text-slate-700">{feedback}</p> : null}
+          <div className="flex flex-col items-start gap-3 lg:items-end">
+            <button
+              type="button"
+              onClick={handleExport}
+              className="min-h-11 rounded-xl border border-amber-500 bg-amber-500 px-4 text-sm font-black text-white"
+            >
+              تصدير بيانات السائقين
+            </button>
+            {feedback ? <p className="text-sm font-black text-slate-700">{feedback}</p> : null}
+          </div>
         </div>
 
         <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200">

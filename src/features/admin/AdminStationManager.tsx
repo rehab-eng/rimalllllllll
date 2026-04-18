@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 
 import { formatArabicNumber, stationRuntimeStatusLabels } from "../../lib/labels";
 import { formatScheduleWindow, weekdayLabels } from "../../lib/station-status";
@@ -66,7 +66,8 @@ export default function AdminStationManager({
   const [location, setLocation] = useState("");
   const [editingStationId, setEditingStationId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; text: string } | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isSaving, setIsSaving] = useState(false);
+  const [togglingStationId, setTogglingStationId] = useState<number | null>(null);
   const [schedules, setSchedules] = useState<ScheduleDraft[]>(createInitialSchedules);
   const [applySameTime, setApplySameTime] = useState(true);
   const [sharedOpenTime, setSharedOpenTime] = useState(defaultOpenTime);
@@ -85,7 +86,7 @@ export default function AdminStationManager({
     );
   };
 
-  const buildPayloadSchedules = () => {
+  const buildPayloadSchedules = (): AdminStationFormPayload["schedules"] => {
     if (!applySameTime) {
       return schedules;
     }
@@ -126,6 +127,7 @@ export default function AdminStationManager({
 
   const resetForm = () => {
     const initialSchedules = createInitialSchedules();
+
     setEditingStationId(null);
     setName("");
     setLocation("");
@@ -136,11 +138,21 @@ export default function AdminStationManager({
     setFeedback(null);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFeedback(null);
 
-    startTransition(async () => {
+    if (!name.trim()) {
+      setFeedback({
+        kind: "error",
+        text: "اسم المحطة مطلوب.",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
       const result = await onSaveStation({
         id: editingStationId ?? undefined,
         name,
@@ -165,7 +177,41 @@ export default function AdminStationManager({
       if (!editingStationId) {
         resetForm();
       }
-    });
+    } catch (error) {
+      setFeedback({
+        kind: "error",
+        text: error instanceof Error ? error.message : "تعذر حفظ المحطة.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleToggleStation = async (station: AdminStationRow) => {
+    setFeedback(null);
+    setTogglingStationId(station.id);
+
+    try {
+      const result = await onToggleStation(station.id, !station.is_active);
+      setFeedback(
+        result.success
+          ? {
+              kind: "success",
+              text: station.is_active ? "تم إيقاف المحطة." : "تم تفعيل المحطة.",
+            }
+          : {
+              kind: "error",
+              text: result.error ?? "تعذر تحديث حالة المحطة.",
+            },
+      );
+    } catch (error) {
+      setFeedback({
+        kind: "error",
+        text: error instanceof Error ? error.message : "تعذر تحديث حالة المحطة.",
+      });
+    } finally {
+      setTogglingStationId(null);
+    }
   };
 
   return (
@@ -175,7 +221,7 @@ export default function AdminStationManager({
           <p className="text-xs font-black tracking-[0.18em] text-slate-500">STATIONS LIST</p>
           <h2 className="mt-2 text-2xl font-black text-slate-950">المحطات الحالية</h2>
           <p className="mt-2 text-sm font-semibold leading-7 text-slate-500">
-            تعديل الحالة أو فتح نموذج التعديل لكل محطة من نفس الصفحة.
+            راجع حالة كل محطة وافتح نموذج التعديل أو الإيقاف مباشرة.
           </p>
 
           <div className="mt-5 grid gap-3">
@@ -227,29 +273,19 @@ export default function AdminStationManager({
 
                     <button
                       type="button"
-                      onClick={() =>
-                        startTransition(async () => {
-                          const result = await onToggleStation(station.id, !station.is_active);
-                          setFeedback(
-                            result.success
-                              ? {
-                                  kind: "success",
-                                  text: station.is_active ? "تم إيقاف المحطة." : "تم تفعيل المحطة.",
-                                }
-                              : {
-                                  kind: "error",
-                                  text: result.error ?? "تعذر تحديث حالة المحطة.",
-                                },
-                          );
-                        })
-                      }
-                      className={`min-h-10 rounded-xl border px-4 text-sm font-black ${
+                      disabled={togglingStationId === station.id}
+                      onClick={() => void handleToggleStation(station)}
+                      className={`min-h-10 rounded-xl border px-4 text-sm font-black disabled:opacity-60 ${
                         station.is_active
                           ? "border-red-200 bg-red-50 text-red-600"
                           : "border-slate-200 bg-white text-slate-700"
                       }`}
                     >
-                      {station.is_active ? "إيقاف" : "تفعيل"}
+                      {togglingStationId === station.id
+                        ? "جارٍ التحديث..."
+                        : station.is_active
+                          ? "إيقاف"
+                          : "تفعيل"}
                     </button>
                   </div>
                 </div>
@@ -296,20 +332,22 @@ export default function AdminStationManager({
             </Field>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <label className="flex items-center gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <label className="flex items-center justify-end gap-3">
+                  <span className="text-sm font-black text-slate-800">تطبيق نفس الوقت على كل الأيام</span>
                   <input
                     type="checkbox"
                     checked={applySameTime}
                     onChange={(event) => setApplySameTime(event.target.checked)}
                     className="h-5 w-5 accent-amber-500"
                   />
-                  <span className="text-sm font-black text-slate-800">تطبيق نفس الوقت على كل الأيام</span>
                 </label>
 
                 <div className="text-right">
                   <p className="text-sm font-black text-slate-950">أيام العمل</p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">اختر الأيام التي تعمل فيها المحطة</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                    اليوم المفعّل يظهر بالأخضر، واليوم الملغي يظهر بالأحمر
+                  </p>
                 </div>
               </div>
 
@@ -321,10 +359,10 @@ export default function AdminStationManager({
                     onClick={() =>
                       updateSchedule(schedule.dayOfWeek, { isEnabled: !schedule.isEnabled })
                     }
-                    className={`rounded-full border px-3 py-2 text-sm font-black ${
+                    className={`rounded-full px-3 py-2 text-sm font-black ${
                       schedule.isEnabled
-                        ? "border-amber-200 bg-amber-50 text-amber-700"
-                        : "border-slate-200 bg-white text-slate-500"
+                        ? "bg-green-500 text-white"
+                        : "bg-red-100 text-red-600"
                     }`}
                   >
                     {weekdayLabels[schedule.dayOfWeek]}
@@ -335,23 +373,11 @@ export default function AdminStationManager({
               {applySameTime ? (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <TimeField label="وقت الافتتاح">
-                    <input
-                      type="time"
-                      step={60}
-                      value={sharedOpenTime}
-                      onChange={(event) => setSharedOpenTime(normalizeTimeInput(event.target.value))}
-                      className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-950 outline-none"
-                    />
+                    <TimeInput value={sharedOpenTime} onChange={setSharedOpenTime} />
                   </TimeField>
 
                   <TimeField label="وقت الإغلاق">
-                    <input
-                      type="time"
-                      step={60}
-                      value={sharedCloseTime}
-                      onChange={(event) => setSharedCloseTime(normalizeTimeInput(event.target.value))}
-                      className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-950 outline-none"
-                    />
+                    <TimeInput value={sharedCloseTime} onChange={setSharedCloseTime} />
                   </TimeField>
                 </div>
               ) : (
@@ -361,45 +387,34 @@ export default function AdminStationManager({
                       key={schedule.dayOfWeek}
                       className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-[140px_minmax(0,1fr)_minmax(0,1fr)] sm:items-end"
                     >
-                      <label className="flex items-center justify-end gap-3">
-                        <span className="text-sm font-black text-slate-800">
+                      <div className="text-right">
+                        <p className="text-sm font-black text-slate-900">
                           {weekdayLabels[schedule.dayOfWeek]}
-                        </span>
-                        <input
-                          type="checkbox"
-                          checked={schedule.isEnabled}
-                          onChange={(event) =>
-                            updateSchedule(schedule.dayOfWeek, { isEnabled: event.target.checked })
-                          }
-                          className="h-5 w-5 accent-amber-500"
-                        />
-                      </label>
+                        </p>
+                        <p
+                          className={`mt-1 text-xs font-bold ${
+                            schedule.isEnabled ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {schedule.isEnabled ? "مفعّل" : "ملغي"}
+                        </p>
+                      </div>
 
                       <TimeField label="وقت الافتتاح">
-                        <input
-                          type="time"
-                          step={60}
+                        <TimeInput
                           value={schedule.opensAt}
-                          onChange={(event) =>
-                            updateSchedule(schedule.dayOfWeek, {
-                              opensAt: normalizeTimeInput(event.target.value),
-                            })
+                          onChange={(value) =>
+                            updateSchedule(schedule.dayOfWeek, { opensAt: value })
                           }
-                          className="min-h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-950 outline-none"
                         />
                       </TimeField>
 
                       <TimeField label="وقت الإغلاق">
-                        <input
-                          type="time"
-                          step={60}
+                        <TimeInput
                           value={schedule.closesAt}
-                          onChange={(event) =>
-                            updateSchedule(schedule.dayOfWeek, {
-                              closesAt: normalizeTimeInput(event.target.value),
-                            })
+                          onChange={(value) =>
+                            updateSchedule(schedule.dayOfWeek, { closesAt: value })
                           }
-                          className="min-h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-950 outline-none"
                         />
                       </TimeField>
                     </div>
@@ -420,10 +435,10 @@ export default function AdminStationManager({
 
             <button
               type="submit"
-              disabled={isPending}
-              className="min-h-12 rounded-xl border border-amber-500 bg-amber-500 px-4 text-sm font-black text-white disabled:opacity-60"
+              disabled={isSaving}
+              className="min-h-12 rounded-xl border border-amber-500 bg-amber-500 px-4 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isPending ? "جارٍ حفظ المحطة..." : editingStationId ? "تحديث المحطة" : "حفظ المحطة"}
+              {isSaving ? "جارٍ حفظ المحطة..." : editingStationId ? "تحديث المحطة" : "حفظ المحطة"}
             </button>
           </div>
         </form>
@@ -459,5 +474,26 @@ function TimeField({
       <span className="text-xs font-black tracking-[0.1em] text-slate-500">{label}</span>
       {children}
     </label>
+  );
+}
+
+function TimeInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <input
+      type="time"
+      step={60}
+      lang="en-US"
+      dir="ltr"
+      inputMode="numeric"
+      value={value}
+      onChange={(event) => onChange(normalizeTimeInput(event.target.value))}
+      className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 text-left text-sm font-bold text-slate-950 outline-none"
+    />
   );
 }
