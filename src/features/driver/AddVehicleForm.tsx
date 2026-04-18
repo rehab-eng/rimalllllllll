@@ -23,8 +23,6 @@ export default function AddVehicleForm({
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const nextVehicleLabel = `الشاحنة ${existingVehicles.length + 1}`;
-
   const resetForm = () => {
     setPlatesNumber("");
     setTrailerPlates("");
@@ -50,7 +48,7 @@ export default function AddVehicleForm({
     if (!Number.isFinite(numericCapacity) || numericCapacity <= 0) {
       setFeedback({
         kind: "error",
-        text: "سعة التانك يجب أن تكون أكبر من صفر.",
+        text: "أدخل سعة تانك صحيحة.",
       });
       return;
     }
@@ -58,7 +56,7 @@ export default function AddVehicleForm({
     if (!Number.isFinite(numericCubic) || numericCubic <= 0) {
       setFeedback({
         kind: "error",
-        text: "تكعيب الشاحنة يجب أن يكون أكبر من صفر.",
+        text: "أدخل قيمة صحيحة لتكعيب الشاحنة.",
       });
       return;
     }
@@ -74,23 +72,23 @@ export default function AddVehicleForm({
       if (!result.success) {
         setFeedback({
           kind: "error",
-          text: result.error ?? "تعذر إضافة هذه الشاحنة.",
+          text: result.error ?? "تعذر إضافة الشاحنة.",
         });
         return;
       }
 
       resetForm();
+      setIsFormOpen(false);
       setFeedback({
         kind: "success",
-        text: `تمت إضافة ${nextVehicleLabel} بنجاح.`,
+        text: "تمت إضافة الشاحنة الجديدة بنجاح.",
       });
-      setIsFormOpen(false);
     });
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-4 text-amber-950">
-      <section className="rounded-[28px] border border-amber-200 bg-amber-50/85 p-5 shadow-2xl backdrop-blur-md">
+    <section className="border-b border-slate-200">
+      <div className="px-4 py-5 text-right">
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
@@ -98,52 +96,31 @@ export default function AddVehicleForm({
               setIsFormOpen((value) => !value);
               setFeedback(null);
             }}
-            className="min-h-12 rounded-2xl border border-amber-300 bg-white px-4 text-sm font-black text-amber-950"
+            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-black text-slate-700"
           >
-            {isFormOpen ? "إغلاق النموذج" : "إضافة شاحنة جديدة"}
+            {isFormOpen ? "إغلاق" : "إضافة شاحنة"}
           </button>
 
-          <div className="text-right">
-            <p className="text-xs font-bold tracking-[0.14em] text-amber-900">إدارة الشاحنات</p>
-            <h2 className="mt-2 text-2xl font-black text-amber-950">{nextVehicleLabel}</h2>
+          <div>
+            <h3 className="text-xl font-black text-slate-950">إضافة شاحنة جديدة</h3>
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              عدد الشاحنات الحالية: {formatArabicNumber(existingVehicles.length)}
+            </p>
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-white/80 px-4 py-3 text-right">
-          <p className="text-sm font-bold text-amber-900">عدد الشاحنات المرتبطة بالحساب</p>
-          <p className="mt-1 text-2xl font-black text-amber-950">
-            {formatArabicNumber(existingVehicles.length)}
+        {!isFormOpen ? (
+          <p className="mt-4 text-sm font-semibold leading-7 text-slate-600">
+            افتح النموذج عند الحاجة لإضافة شاحنة أخرى على نفس الحساب.
           </p>
-        </div>
-
-        {existingVehicles.length > 0 ? (
-          <div className="mt-4 grid gap-3">
-            {existingVehicles.map((vehicle, index) => (
-              <div
-                key={vehicle.id}
-                className="rounded-2xl border border-amber-200 bg-white/80 p-4 text-right"
-              >
-                <p className="text-sm font-black text-amber-900">{`الشاحنة ${index + 1}`}</p>
-                <p className="mt-2 text-base font-bold text-amber-950">{vehicle.platesNumber}</p>
-                <p className="mt-1 text-sm font-semibold text-amber-900">
-                  سعة التانك: {formatArabicNumber(vehicle.capacityLiters)} لتر
-                </p>
-                <p className="mt-1 text-sm font-semibold text-amber-900">
-                  التكعيب: {formatArabicNumber(vehicle.cubicCapacity)}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : null}
-
-        {isFormOpen ? (
+        ) : (
           <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
             <Field label="رقم لوحة الشاحنة">
               <input
                 value={platesNumber}
                 onChange={(event) => setPlatesNumber(event.target.value)}
-                placeholder="أدخل رقم اللوحة"
-                className="min-h-14 rounded-2xl border border-amber-200 bg-white px-4 text-base font-bold text-amber-950 outline-none placeholder:text-amber-700/60"
+                placeholder="مثال: 123 ليبيا"
+                className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
               />
             </Field>
 
@@ -152,7 +129,7 @@ export default function AddVehicleForm({
                 value={trailerPlates}
                 onChange={(event) => setTrailerPlates(event.target.value)}
                 placeholder="اختياري"
-                className="min-h-14 rounded-2xl border border-amber-200 bg-white px-4 text-base font-bold text-amber-950 outline-none placeholder:text-amber-700/60"
+                className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
               />
             </Field>
 
@@ -164,7 +141,7 @@ export default function AddVehicleForm({
                   value={capacityLiters}
                   onChange={(event) => setCapacityLiters(event.target.value ? Number(event.target.value) : "")}
                   placeholder="16000"
-                  className="min-h-14 rounded-2xl border border-amber-200 bg-white px-4 text-base font-bold text-amber-950 outline-none placeholder:text-amber-700/60"
+                  className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
                 />
               </Field>
 
@@ -176,7 +153,7 @@ export default function AddVehicleForm({
                   value={cubicCapacity}
                   onChange={(event) => setCubicCapacity(event.target.value ? Number(event.target.value) : "")}
                   placeholder="45"
-                  className="min-h-14 rounded-2xl border border-amber-200 bg-white px-4 text-base font-bold text-amber-950 outline-none placeholder:text-amber-700/60"
+                  className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
                 />
               </Field>
             </div>
@@ -185,7 +162,7 @@ export default function AddVehicleForm({
               <div
                 className={`rounded-2xl border px-4 py-3 ${
                   feedback.kind === "success"
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                     : "border-red-200 bg-red-50 text-red-700"
                 }`}
               >
@@ -196,14 +173,14 @@ export default function AddVehicleForm({
             <button
               type="submit"
               disabled={isPending}
-              className="min-h-16 rounded-2xl border border-amber-300 bg-amber-200 px-5 text-lg font-black text-amber-950 disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-14 rounded-2xl bg-amber-500 px-5 text-base font-black text-white disabled:opacity-60"
             >
               {isPending ? "جارٍ حفظ الشاحنة..." : "حفظ الشاحنة"}
             </button>
           </form>
-        ) : null}
-      </section>
-    </div>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -216,7 +193,7 @@ function Field({
 }) {
   return (
     <label className="grid gap-2 text-right">
-      <span className="text-sm font-bold text-amber-900">{label}</span>
+      <span className="text-sm font-black text-slate-800">{label}</span>
       {children}
     </label>
   );

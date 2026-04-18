@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 import type { FuelType } from "../../lib/db-types";
 import { formatArabicNumber, fuelTypeLabels, stationRuntimeStatusLabels } from "../../lib/labels";
@@ -26,9 +26,14 @@ export default function FuelFillForm({
   onSubmit,
   literOptions = defaultLiterOptions,
 }: FuelFillFormProps) {
+  const openStations = useMemo(
+    () => stations.filter((station) => station.runtimeStatus === "OPEN"),
+    [stations],
+  );
+
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>(String(vehicles[0]?.id ?? ""));
   const [selectedStationId, setSelectedStationId] = useState<string>(
-    String(stations.find((station) => station.runtimeStatus === "OPEN")?.id ?? stations[0]?.id ?? ""),
+    String(openStations[0]?.id ?? stations[0]?.id ?? ""),
   );
   const [fuelType, setFuelType] = useState<FuelType>("DIESEL");
   const [liters, setLiters] = useState<number>(literOptions[0] ?? 50);
@@ -42,10 +47,16 @@ export default function FuelFillForm({
   }, [selectedVehicleId, vehicles]);
 
   useEffect(() => {
+    const nextStationId = String(openStations[0]?.id ?? stations[0]?.id ?? "");
     if (!stations.some((station) => String(station.id) === selectedStationId)) {
-      setSelectedStationId(String(stations[0]?.id ?? ""));
+      setSelectedStationId(nextStationId);
+      return;
     }
-  }, [selectedStationId, stations]);
+
+    if (openStations.length > 0 && !openStations.some((station) => String(station.id) === selectedStationId)) {
+      setSelectedStationId(nextStationId);
+    }
+  }, [openStations, selectedStationId, stations]);
 
   const selectedVehicle = vehicles.find((vehicle) => String(vehicle.id) === selectedVehicleId);
   const selectedStation = stations.find((station) => String(station.id) === selectedStationId);
@@ -57,7 +68,7 @@ export default function FuelFillForm({
     if (!selectedVehicle) {
       setFeedback({
         kind: "error",
-        text: "اختر المركبة أولًا.",
+        text: "اختر الشاحنة أولاً.",
       });
       return;
     }
@@ -65,7 +76,7 @@ export default function FuelFillForm({
     if (!selectedStation || selectedStation.runtimeStatus !== "OPEN") {
       setFeedback({
         kind: "error",
-        text: "لا يمكن تأكيد التعبئة إلا من محطة مفتوحة ضمن ساعات العمل الحالية.",
+        text: "اختر محطة مفتوحة الآن حتى يتم تأكيد التعبئة.",
       });
       return;
     }
@@ -81,7 +92,7 @@ export default function FuelFillForm({
       if (!result.success) {
         setFeedback({
           kind: "error",
-          text: result.error ?? "تعذر تأكيد عملية التعبئة.",
+          text: result.error ?? "تعذر حفظ عملية التعبئة.",
         });
         return;
       }
@@ -90,213 +101,163 @@ export default function FuelFillForm({
         kind: "success",
         text:
           fuelType === "DIESEL"
-            ? "تم تأكيد استلام الديزل بنجاح."
-            : "تم تأكيد استلام البنزين بنجاح.",
+            ? "تم تسجيل تعبئة الديزل بنجاح."
+            : "تم تسجيل تعبئة البنزين بنجاح.",
       });
     });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-md text-white">
-      <section className="bg-white/10 backdrop-blur-md border border-white/20 rounded-[28px] p-5 shadow-2xl">
-        <p className="text-xs font-bold tracking-[0.16em] text-white">تأكيد التعبئة</p>
-        <h2 className="mt-2 text-3xl font-black text-white">استلمت الوقود</h2>
+    <form onSubmit={handleSubmit} className="border-b border-slate-200">
+      <div className="px-4 py-5 text-right">
+        <p className="text-xs font-bold tracking-[0.16em] text-slate-500">تعبئة جديدة</p>
+        <h2 className="mt-1 text-2xl font-black text-slate-950">المحطات الجاهزة الآن</h2>
+        <p className="mt-2 text-sm font-semibold leading-7 text-slate-600">
+          اختر محطة مفتوحة، ثم أكد الكمية التي استلمتها بضغطة واحدة.
+        </p>
 
-        <div className="mt-5 rounded-[24px] border border-white/20 bg-black/25 p-4 text-right">
-          <p className="text-sm font-bold text-white">المركبة والمحطة المختارتان</p>
-          <p className="mt-2 text-xl font-black text-white">
-            {selectedVehicle ? selectedVehicle.platesNumber : "لم يتم اختيار مركبة"}
-          </p>
-          <p className="mt-1 text-sm font-semibold text-white">
-            {selectedStation
-              ? `${selectedStation.name}${selectedStation.location ? ` - ${selectedStation.location}` : ""}`
-              : "لم يتم اختيار محطة"}
-          </p>
-        </div>
-
-        <div className="mt-5">
-          <Label title="اختر المركبة" />
-          <div className="mt-3 grid gap-3">
-            {vehicles.map((vehicle, index) => {
-              const isSelected = String(vehicle.id) === selectedVehicleId;
-
-              return (
-                <button
-                  key={vehicle.id}
-                  type="button"
-                  onClick={() => setSelectedVehicleId(String(vehicle.id))}
-                  className={`min-h-18 rounded-[24px] border p-4 text-right ${
-                    isSelected
-                      ? "border-white bg-white text-black"
-                      : "border-white/20 bg-black/25 text-white"
-                  }`}
-                >
-                  <p className={`text-sm font-black ${isSelected ? "text-black" : "text-white"}`}>
-                    {`المركبة ${index + 1}`}
-                  </p>
-                  <p className={`mt-2 text-xl font-black ${isSelected ? "text-black" : "text-white"}`}>
-                    {vehicle.platesNumber}
-                  </p>
-                  <p className={`mt-1 text-sm font-semibold ${isSelected ? "text-black" : "text-white"}`}>
-                    السعة: {formatArabicNumber(vehicle.capacityLiters)} لتر
-                  </p>
-                </button>
-              );
-            })}
+        {openStations.length === 0 ? (
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <p className="text-sm font-bold text-slate-700">
+              لا توجد محطة متاحة الآن. راجع مواعيد المحطات بالأسفل.
+            </p>
           </div>
-        </div>
-
-        <div className="mt-5">
-          <Label title="اختر المحطة" />
-          <p className="mt-2 text-sm font-semibold text-white">
-            يسمح بالتأكيد فقط إذا كان الوقت الحالي داخل ساعات عمل المحطة.
-          </p>
-          <div className="mt-3 grid gap-3">
-            {stations.map((station) => {
+        ) : (
+          <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
+            {openStations.map((station, index) => {
               const isSelected = String(station.id) === selectedStationId;
-              const isOpen = station.runtimeStatus === "OPEN";
 
               return (
                 <button
                   key={station.id}
                   type="button"
                   onClick={() => setSelectedStationId(String(station.id))}
-                  className={`rounded-[24px] border p-4 text-right ${
-                    isSelected
-                      ? "border-white bg-white text-black"
-                      : "border-white/20 bg-black/25 text-white"
-                  }`}
+                  className={`flex w-full items-start justify-between gap-3 px-4 py-4 text-right ${
+                    index !== openStations.length - 1 ? "border-b border-slate-200" : ""
+                  } ${isSelected ? "bg-amber-50" : "bg-white"}`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-black ${
-                        isSelected
-                          ? "bg-black text-white"
-                          : isOpen
-                            ? "bg-white text-black"
-                            : "border border-white/20 bg-black/35 text-white"
-                      }`}
-                    >
-                      {stationRuntimeStatusLabels[station.runtimeStatus]}
-                    </span>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                    {stationRuntimeStatusLabels[station.runtimeStatus]}
+                  </span>
 
-                    <div className="text-right">
-                      <p className={`text-base font-black ${isSelected ? "text-black" : "text-white"}`}>
-                        {station.name}
-                      </p>
-                      <p className={`mt-1 text-sm font-semibold ${isSelected ? "text-black" : "text-white"}`}>
-                        {station.location || "لم يتم تحديد موقع"}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="text-base font-black text-slate-950">{station.name}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      {station.location || "الموقع غير مضاف بعد"}
+                    </p>
                   </div>
                 </button>
               );
             })}
           </div>
+        )}
+
+        <SectionLabel title="الشاحنة" />
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          {vehicles.map((vehicle) => {
+            const isSelected = String(vehicle.id) === selectedVehicleId;
+
+            return (
+              <button
+                key={vehicle.id}
+                type="button"
+                onClick={() => setSelectedVehicleId(String(vehicle.id))}
+                className={`min-w-[150px] rounded-2xl border px-4 py-3 text-right ${
+                  isSelected
+                    ? "border-amber-200 bg-amber-50 text-slate-950"
+                    : "border-slate-200 bg-white text-slate-700"
+                }`}
+              >
+                <p className="text-sm font-black">{vehicle.platesNumber}</p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  {formatArabicNumber(vehicle.capacityLiters)} لتر
+                </p>
+              </button>
+            );
+          })}
         </div>
 
-        <div className="mt-5">
-          <Label title="نوع الوقود" />
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <FuelTypeCard
-              isActive={fuelType === "DIESEL"}
-              label="ديزل"
-              helper="نافطة / ديزل"
-              onClick={() => setFuelType("DIESEL")}
-            />
-            <FuelTypeCard
-              isActive={fuelType === "GASOLINE"}
-              label="بنزين"
-              helper="بنزين"
-              onClick={() => setFuelType("GASOLINE")}
-            />
-          </div>
+        <SectionLabel title="نوع الوقود" />
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {(["DIESEL", "GASOLINE"] as const).map((type) => {
+            const isActive = fuelType === type;
+
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setFuelType(type)}
+                className={`rounded-2xl border px-4 py-3 text-sm font-black ${
+                  isActive
+                    ? "border-amber-200 bg-amber-50 text-slate-950"
+                    : "border-slate-200 bg-white text-slate-600"
+                }`}
+              >
+                {fuelTypeLabels[type]}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="mt-5">
-          <Label title="كمية اللترات" />
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            {literOptions.map((option) => {
-              const isActive = liters === option;
+        <SectionLabel title="الكمية" />
+        <div className="mt-3 grid grid-cols-4 gap-2">
+          {literOptions.map((option) => {
+            const isActive = liters === option;
 
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setLiters(option)}
-                  className={`min-h-20 rounded-[24px] border ${
-                    isActive
-                      ? "border-white bg-white text-black"
-                      : "border-white/20 bg-black/25 text-white"
-                  }`}
-                >
-                    <span className={`block text-3xl font-black ${isActive ? "text-black" : "text-white"}`}>
-                    {formatArabicNumber(option)}
-                  </span>
-                  <span className={`mt-1 block text-sm font-bold ${isActive ? "text-black" : "text-white"}`}>
-                    لتر
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setLiters(option)}
+                className={`rounded-2xl border px-3 py-4 ${
+                  isActive
+                    ? "border-amber-200 bg-amber-50 text-slate-950"
+                    : "border-slate-200 bg-white text-slate-600"
+                }`}
+              >
+                <span className="block text-lg font-black">{formatArabicNumber(option)}</span>
+                <span className="mt-1 block text-[11px] font-bold">لتر</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-right">
+          <p className="text-sm font-bold text-slate-500">سيتم التسجيل على</p>
+          <p className="mt-2 text-base font-black text-slate-950">
+            {selectedStation ? selectedStation.name : "لم يتم اختيار محطة"}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-slate-600">
+            {selectedVehicle ? selectedVehicle.platesNumber : "لم يتم اختيار شاحنة"}
+          </p>
         </div>
 
         {feedback ? (
           <div
-            className={`mt-5 rounded-2xl border px-4 py-4 ${
+            className={`mt-4 rounded-2xl border px-4 py-4 ${
               feedback.kind === "success"
-                ? "border-white bg-white text-black"
-                : "border-white/20 bg-black/30 text-white"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-red-200 bg-red-50 text-red-700"
             }`}
           >
-            <p className={`text-base font-black ${feedback.kind === "success" ? "text-black" : "text-white"}`}>
-              {feedback.text}
-            </p>
+            <p className="text-sm font-black">{feedback.text}</p>
           </div>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={isPending || !vehicles.length || !stations.length}
-          className="mt-5 min-h-20 w-full rounded-[28px] border border-white bg-white px-5 text-xl font-black text-black disabled:cursor-not-allowed disabled:border-white/50 disabled:bg-white/60"
-        >
-          {isPending
-            ? "جارٍ الحفظ..."
-            : fuelType === "DIESEL"
-              ? `تم استلام ${fuelTypeLabels.DIESEL}`
-              : `تم استلام ${fuelTypeLabels.GASOLINE}`}
-        </button>
-      </section>
+        <div className="mt-6 flex justify-center">
+          <button
+            type="submit"
+            disabled={isPending || !vehicles.length || openStations.length === 0}
+            className="min-h-16 w-full max-w-xs rounded-2xl bg-amber-500 px-6 text-lg font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            {isPending ? "جارٍ الحفظ..." : "تأكيد التعبئة"}
+          </button>
+        </div>
+      </div>
     </form>
   );
 }
 
-function Label({ title }: { title: string }) {
-  return <p className="text-sm font-bold text-white">{title}</p>;
-}
-
-function FuelTypeCard({
-  isActive,
-  label,
-  helper,
-  onClick,
-}: {
-  isActive: boolean;
-  label: string;
-  helper: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`min-h-20 rounded-[24px] border p-4 text-right ${
-        isActive ? "border-white bg-white text-black" : "border-white/20 bg-black/25 text-white"
-      }`}
-    >
-      <p className={`text-xl font-black ${isActive ? "text-black" : "text-white"}`}>{label}</p>
-      <p className={`mt-1 text-sm font-semibold ${isActive ? "text-black" : "text-white"}`}>{helper}</p>
-    </button>
-  );
+function SectionLabel({ title }: { title: string }) {
+  return <p className="mt-5 text-sm font-black text-slate-800">{title}</p>;
 }

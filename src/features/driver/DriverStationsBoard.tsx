@@ -6,66 +6,80 @@ type DriverStationsBoardProps = {
 };
 
 export default function DriverStationsBoard({ stations }: DriverStationsBoardProps) {
-  const availableStations = stations.filter((station) => station.runtimeStatus === "OPEN");
+  const sortedStations = [...stations].sort((left, right) => {
+    if (left.runtimeStatus === right.runtimeStatus) {
+      return left.name.localeCompare(right.name, "ar");
+    }
+
+    if (left.runtimeStatus === "OPEN") {
+      return -1;
+    }
+
+    if (right.runtimeStatus === "OPEN") {
+      return 1;
+    }
+
+    return left.runtimeStatus.localeCompare(right.runtimeStatus);
+  });
+
+  const openStationsCount = stations.filter((station) => station.runtimeStatus === "OPEN").length;
 
   return (
-    <section className="rounded-[28px] border border-amber-200 bg-amber-50/85 p-5 shadow-2xl backdrop-blur-md">
-      <div className="flex items-center justify-between gap-3">
-        <span className="rounded-full border border-amber-300 bg-white px-3 py-1 text-sm font-black text-amber-900">
-          {availableStations.length}
-        </span>
+    <section className="border-b border-slate-200">
+      <div className="px-4 py-5 text-right">
+        <div className="flex items-center justify-between gap-3">
+          <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+            {openStationsCount} متاحة الآن
+          </span>
 
-        <div className="text-right">
-          <p className="text-xs font-bold tracking-[0.14em] text-amber-900">الشيلات</p>
-          <h3 className="mt-2 text-2xl font-black text-amber-950">المحطات المتاحة حالياً</h3>
+          <div>
+            <h3 className="text-xl font-black text-slate-950">المحطات</h3>
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              راجع حالة كل محطة ومواعيد اليوم بسرعة.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="mt-5 grid gap-3">
-        {stations.length === 0 ? (
-          <div className="rounded-[24px] border border-amber-200 bg-white/80 p-4">
-            <p className="text-base font-black text-amber-900">لم يتم إعداد أي محطة حتى الآن.</p>
+        {sortedStations.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <p className="text-sm font-bold text-slate-600">لا توجد محطات مضافة حتى الآن.</p>
           </div>
         ) : (
-          stations.map((station) => (
-            <div key={station.id} className="rounded-[24px] border border-amber-200 bg-white/80 p-4 text-right">
-              <div className="flex items-start justify-between gap-3">
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-black ${
-                    station.runtimeStatus === "OPEN"
-                      ? "border border-emerald-200 bg-emerald-100 text-emerald-800"
-                      : "border border-amber-200 bg-amber-50 text-amber-800"
-                  }`}
-                >
-                  {stationRuntimeStatusLabels[station.runtimeStatus]}
-                </span>
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
+            {sortedStations.map((station, index) => (
+              <div
+                key={station.id}
+                className={`bg-white px-4 py-4 text-right ${
+                  index !== sortedStations.length - 1 ? "border-b border-slate-200" : ""
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                      station.runtimeStatus === "OPEN"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : station.runtimeStatus === "CLOSED"
+                          ? "bg-slate-100 text-slate-600"
+                          : "bg-amber-50 text-amber-700"
+                    }`}
+                  >
+                    {stationRuntimeStatusLabels[station.runtimeStatus]}
+                  </span>
 
-                <div>
-                  <p className="text-lg font-black text-amber-950">{station.name}</p>
-                  <p className="mt-1 text-sm font-semibold text-amber-900">
-                    {station.location || "لم يتم تحديد موقع"}
-                  </p>
+                  <div>
+                    <p className="text-base font-black text-slate-950">{station.name}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      {station.location || "الموقع غير مضاف بعد"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 text-sm font-semibold text-slate-600">
+                  {station.todaySchedule ? `اليوم: ${station.todaySchedule}` : "اليوم: لا يوجد دوام محدد"}
                 </div>
               </div>
-
-              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
-                <p className="text-sm font-black text-amber-900">
-                  ساعات اليوم: {station.todaySchedule ?? "لا يوجد دوام مفعّل لهذا اليوم"}
-                </p>
-              </div>
-
-              <div className="mt-4 flex flex-wrap justify-end gap-2">
-                {station.scheduleSummary.map((entry) => (
-                  <span
-                    key={`${station.id}-${entry}`}
-                    className="rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-bold text-amber-900"
-                  >
-                    {entry}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </section>

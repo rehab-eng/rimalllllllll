@@ -6,7 +6,6 @@ import SystemStatusCard from "../../components/SystemStatusCard";
 import AdminDashboard from "../../features/admin/AdminDashboard";
 import AdminDataTable from "../../features/admin/AdminDataTable";
 import AdminDriversPanel from "../../features/admin/AdminDriversPanel";
-import AdminSettingsPanel from "../../features/admin/AdminSettingsPanel";
 import AdminStationManager from "../../features/admin/AdminStationManager";
 import type {
   AdminDriverRow,
@@ -472,10 +471,6 @@ export default async function AdminPage() {
             onActivateDriver={handleActivateDriver}
             onDeleteDriver={handleDeleteDriver}
           />
-        </section>
-
-        <section id="settings" className="scroll-mt-24">
-          <AdminSettingsPanel />
         </section>
       </AdminDashboard>
     );

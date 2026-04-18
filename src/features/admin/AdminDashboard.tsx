@@ -19,7 +19,6 @@ const navigationItems = [
   { id: "overview", label: "الرئيسية", icon: <HomeIcon /> },
   { id: "stations", label: "المحطات", icon: <StationIcon /> },
   { id: "drivers", label: "السائقين", icon: <DriverIcon /> },
-  { id: "settings", label: "الإعدادات", icon: <SettingsIcon /> },
 ] as const;
 
 const isSameLocalDay = (value: Date | string, compareDate: Date): boolean => {
@@ -142,7 +141,7 @@ export default function AdminDashboard({
               <p className="text-xs font-black tracking-[0.18em] text-slate-500">ADMIN</p>
               <h2 className="mt-2 text-2xl font-black text-slate-950">{adminName}</h2>
               <p className="mt-2 text-sm font-semibold text-slate-500">
-                متابعة يومية للسائقين والمحطات وإعدادات التشغيل.
+                متابعة يومية للسائقين والمحطات من نفس اللوحة.
               </p>
             </div>
 
@@ -247,15 +246,6 @@ function DriverIcon() {
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
       <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
       <path d="M5 20C5 16.6863 8.13401 14 12 14C15.866 14 19 16.6863 19 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function SettingsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
-      <path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z" stroke="currentColor" strokeWidth="2" />
-      <path d="M4 13V11L6.1 10.3C6.3 9.7 6.6 9.2 7 8.7L6.6 6.5L8.5 5.4L10 7C10.6 6.8 11.3 6.7 12 6.7C12.7 6.7 13.4 6.8 14 7L15.5 5.4L17.4 6.5L17 8.7C17.4 9.2 17.7 9.7 17.9 10.3L20 11V13L17.9 13.7C17.7 14.3 17.4 14.8 17 15.3L17.4 17.5L15.5 18.6L14 17C13.4 17.2 12.7 17.3 12 17.3C11.3 17.3 10.6 17.2 10 17L8.5 18.6L6.6 17.5L7 15.3C6.6 14.8 6.3 14.3 6.1 13.7L4 13Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
     </svg>
   );
 }

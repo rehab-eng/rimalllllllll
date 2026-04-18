@@ -40,8 +40,7 @@ export const dynamic = "force-dynamic";
 const DRIVER_SESSION_COOKIE = "rimall_driver_session";
 const DRIVER_SESSION_MAX_AGE = 60 * 60 * 24 * 180;
 
-const pageBackground =
-  "min-h-screen bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.18),transparent_28%),linear-gradient(180deg,#f8fafc_0%,#fff7ed_100%)]";
+const pageBackground = "min-h-screen bg-white";
 
 type DriverRaw = {
   id: number;

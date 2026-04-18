@@ -4,87 +4,133 @@ import type { DriverFuelHistoryItem, DriverVehicleSummary } from "./types";
 type DriverVehicleStatsProps = {
   vehicles: DriverVehicleSummary[];
   recentFuelLogs: DriverFuelHistoryItem[];
+  mode?: "fleet" | "history" | "combined";
 };
 
 export default function DriverVehicleStats({
   vehicles,
   recentFuelLogs,
+  mode = "combined",
 }: DriverVehicleStatsProps) {
   return (
-    <section className="rounded-[28px] border border-amber-200 bg-amber-50/85 p-5 shadow-2xl backdrop-blur-md">
-      <div className="text-right">
-        <p className="text-xs font-bold tracking-[0.14em] text-amber-900">شاحناتي</p>
-        <h3 className="mt-2 text-2xl font-black text-amber-950">استهلاك الوقود لكل شاحنة</h3>
-      </div>
+    <>
+      {mode !== "history" ? <FleetSection vehicles={vehicles} /> : null}
+      {mode !== "fleet" ? <HistorySection recentFuelLogs={recentFuelLogs} /> : null}
+    </>
+  );
+}
 
-      <div className="mt-5 grid gap-3">
-        {vehicles.map((vehicle, index) => (
-          <div
-            key={vehicle.id}
-            className="rounded-[24px] border border-amber-200 bg-white/80 p-4 text-right"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="text-left">
-                <p className="text-3xl font-black text-amber-950">
-                  {formatArabicNumber(vehicle.totalLiters)}
-                </p>
-                <p className="text-xs font-bold tracking-[0.12em] text-amber-800">لتر</p>
-              </div>
+function FleetSection({ vehicles }: { vehicles: DriverVehicleSummary[] }) {
+  return (
+    <section className="border-b border-slate-200">
+      <div className="px-4 py-5 text-right">
+        <h3 className="text-xl font-black text-slate-950">شاحناتي</h3>
+        <p className="mt-1 text-sm font-semibold text-slate-500">
+          كل شاحنة مرتبطة بحسابك تظهر هنا مباشرة.
+        </p>
 
-              <div>
-                <p className="text-sm font-black text-amber-900">{`الشاحنة ${index + 1}`}</p>
-                <p className="mt-2 text-xl font-black text-amber-950">{vehicle.platesNumber}</p>
-                <p className="mt-1 text-sm font-semibold text-amber-900">
-                  سعة التانك: {formatArabicNumber(vehicle.capacityLiters)} لتر
-                </p>
-                <p className="mt-1 text-sm font-semibold text-amber-900">
-                  التكعيب: {formatArabicNumber(vehicle.cubicCapacity)}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-sm font-semibold text-amber-900">
-                {formatArabicNumber(vehicle.totalLogs)} عمليات تعبئة مؤكدة لهذه الشاحنة
-              </p>
-            </div>
+        {vehicles.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <p className="text-sm font-bold text-slate-600">لا توجد شاحنات مرتبطة بهذا الحساب بعد.</p>
           </div>
-        ))}
-      </div>
-
-      <div className="mt-6 text-right">
-        <p className="text-sm font-bold text-amber-900">آخر نشاط تعبئة</p>
-        <div className="mt-3 grid gap-3">
-          {recentFuelLogs.length === 0 ? (
-            <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-              <p className="text-sm font-semibold text-amber-900">لا توجد عمليات تعبئة حديثة بعد.</p>
-            </div>
-          ) : (
-            recentFuelLogs.map((log) => (
-              <div key={log.id} className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-                <div className="flex items-center justify-between gap-3">
+        ) : (
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
+            {vehicles.map((vehicle, index) => (
+              <div
+                key={vehicle.id}
+                className={`bg-white px-4 py-4 text-right ${
+                  index !== vehicles.length - 1 ? "border-b border-slate-200" : ""
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
                   <div className="text-left">
-                    <p className="text-xl font-black text-amber-950">
-                      {formatArabicNumber(log.liters)} لتر
+                    <p className="text-lg font-black text-slate-950">
+                      {formatArabicNumber(vehicle.totalLiters)}
                     </p>
-                    <p className="mt-1 text-xs font-bold tracking-[0.12em] text-amber-800">
-                      {log.status}
-                    </p>
+                    <p className="text-xs font-bold text-slate-500">لتر مؤكد</p>
                   </div>
 
-                  <div className="text-right">
-                    <p className="text-base font-black text-amber-950">{log.vehiclePlates}</p>
-                    <p className="mt-1 text-sm font-semibold text-amber-900">
+                  <div>
+                    <p className="text-base font-black text-slate-950">{vehicle.platesNumber}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      {vehicle.trailerPlates ? `مقطورة: ${vehicle.trailerPlates}` : "بدون لوحة مقطورة"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
+                  <Metric label="سعة التانك" value={`${formatArabicNumber(vehicle.capacityLiters)} لتر`} />
+                  <Metric label="التكعيب" value={formatArabicNumber(vehicle.cubicCapacity)} />
+                  <Metric label="عدد العمليات" value={formatArabicNumber(vehicle.totalLogs)} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function HistorySection({ recentFuelLogs }: { recentFuelLogs: DriverFuelHistoryItem[] }) {
+  return (
+    <section className="border-b border-slate-200">
+      <div className="px-4 py-5 text-right">
+        <h3 className="text-xl font-black text-slate-950">سجل التعبئة</h3>
+        <p className="mt-1 text-sm font-semibold text-slate-500">
+          آخر العمليات المسجلة على حسابك.
+        </p>
+
+        {recentFuelLogs.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <p className="text-sm font-bold text-slate-600">لا توجد عمليات تعبئة مسجلة بعد.</p>
+          </div>
+        ) : (
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
+            {recentFuelLogs.map((log, index) => (
+              <div
+                key={log.id}
+                className={`bg-white px-4 py-4 text-right ${
+                  index !== recentFuelLogs.length - 1 ? "border-b border-slate-200" : ""
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="text-left">
+                    <p className="text-lg font-black text-slate-950">
+                      {formatArabicNumber(log.liters)} لتر
+                    </p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">{log.status}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-base font-black text-slate-950">{log.vehiclePlates}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
                       {log.stationName || "بدون محطة"} - {log.fuelType}
                     </p>
                   </div>
                 </div>
-                <p className="mt-3 text-sm font-semibold text-amber-800">{log.date}</p>
+
+                <p className="mt-3 text-sm font-semibold text-slate-500">{log.date}</p>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
+  );
+}
+
+function Metric({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-slate-50 px-3 py-3">
+      <p className="text-sm font-black text-slate-900">{value}</p>
+      <p className="mt-1 text-[11px] font-bold text-slate-500">{label}</p>
+    </div>
   );
 }

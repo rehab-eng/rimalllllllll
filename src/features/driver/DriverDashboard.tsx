@@ -1,35 +1,101 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import type { ReactNode } from "react";
+import { Children, cloneElement, isValidElement, useMemo, useState, useTransition } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { driverStatusLabels, formatArabicNumber } from "../../lib/labels";
 import type { DriverDashboardData, DriverNavigationItem } from "./types";
 
 type DriverDashboardProps = {
   driver: DriverDashboardData;
-  navigationItems: DriverNavigationItem[];
+  navigationItems?: DriverNavigationItem[];
   activeNavId?: string;
   onNavigate?: (itemId: string) => void;
   onSignOut?: () => Promise<void> | void;
   children?: ReactNode;
+  homeContent?: ReactNode;
+  vehiclesContent?: ReactNode;
+  historyContent?: ReactNode;
 };
+
+type DriverTabId = "home" | "vehicles" | "history";
+
+const tabs: Array<{
+  id: DriverTabId;
+  label: string;
+  icon: ReactNode;
+}> = [
+  {
+    id: "home",
+    label: "الرئيسية",
+    icon: <HomeIcon />,
+  },
+  {
+    id: "vehicles",
+    label: "شاحناتي",
+    icon: <TruckIcon />,
+  },
+  {
+    id: "history",
+    label: "السجل",
+    icon: <HistoryIcon />,
+  },
+];
 
 export default function DriverDashboard({
   driver,
-  navigationItems,
-  activeNavId,
   onNavigate,
   onSignOut,
   children,
+  homeContent,
+  vehiclesContent,
+  historyContent,
 }: DriverDashboardProps) {
+  const [activeTab, setActiveTab] = useState<DriverTabId>("home");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSigningOut, startTransition] = useTransition();
 
-  const handleNavigate = (itemId: string) => {
-    onNavigate?.(itemId);
-    setIsMenuOpen(false);
-  };
+  const legacyChildren = useMemo(() => {
+    const directChildren = Children.toArray(children);
+
+    if (directChildren.length === 1 && isValidElement(directChildren[0])) {
+      const onlyChild = directChildren[0] as ReactElement<{ children?: ReactNode }>;
+      return Children.toArray(onlyChild.props.children);
+    }
+
+    return directChildren;
+  }, [children]);
+
+  const fallbackStatsElement = legacyChildren[2];
+  const fallbackAddVehicleElement = legacyChildren[3];
+
+  const resolvedHomeContent = homeContent ?? (
+    <>
+      {legacyChildren[0] ?? null}
+      {legacyChildren[1] ?? null}
+    </>
+  );
+
+  const resolvedVehiclesContent = vehiclesContent ?? (
+    <>
+      {cloneStatsSection(fallbackStatsElement, "fleet")}
+      {fallbackAddVehicleElement ?? null}
+    </>
+  );
+
+  const resolvedHistoryContent = historyContent ?? cloneStatsSection(fallbackStatsElement, "history");
+
+  const activeContent = useMemo(() => {
+    if (activeTab === "vehicles") {
+      return resolvedVehiclesContent;
+    }
+
+    if (activeTab === "history") {
+      return resolvedHistoryContent;
+    }
+
+    return resolvedHomeContent;
+  }, [activeTab, resolvedHistoryContent, resolvedHomeContent, resolvedVehiclesContent]);
 
   const handleSignOut = () => {
     if (!onSignOut) {
@@ -42,130 +108,111 @@ export default function DriverDashboard({
     });
   };
 
+  const handleTabChange = (tabId: DriverTabId) => {
+    setActiveTab(tabId);
+    onNavigate?.(tabId);
+  };
+
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-5 text-amber-950">
-      <div className="bg-amber-50/85 backdrop-blur-md border border-amber-200 relative overflow-hidden rounded-[30px] p-5 shadow-2xl">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.16),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(120,53,15,0.08),transparent_28%)]" />
+    <div className="mx-auto min-h-screen w-full max-w-md bg-white text-slate-950">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <button
+              type="button"
+              aria-label="فتح القائمة"
+              onClick={() => setIsMenuOpen(true)}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700"
+            >
+              <MenuIcon />
+            </button>
 
-        <div className="relative flex items-start justify-between gap-3">
-          <button
-            type="button"
-            aria-label="فتح قائمة التنقل"
-            onClick={() => setIsMenuOpen(true)}
-            className="flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-200 bg-white text-amber-950"
-          >
-            <HamburgerIcon />
-          </button>
+            <div className="text-right">
+              <p className="text-[11px] font-bold tracking-[0.16em] text-slate-500">بوابة السائق</p>
+              <h1 className="mt-1 text-xl font-black text-slate-950">{driver.fullName}</h1>
+              <div className="mt-2 flex items-center justify-end gap-2">
+                <span className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-bold text-slate-600">
+                  {driver.code}
+                </span>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                    driver.accountStatus === "ACTIVE"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-amber-50 text-amber-700"
+                  }`}
+                >
+                  {driverStatusLabels[driver.accountStatus]}
+                </span>
+              </div>
+            </div>
+          </div>
 
-          <div className="flex-1 text-right">
-            <p className="text-xs font-bold tracking-[0.18em] text-amber-900">بوابة السائق</p>
-            <h1 className="mt-2 text-3xl font-black text-amber-950">{driver.fullName}</h1>
-            <p className="mt-2 text-sm font-semibold text-amber-900">
-              متابعة التعبئة والشاحنات والمحطات
-            </p>
+          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+            <QuickStat label="لتر مؤكد" value={formatArabicNumber(driver.totalFilledLiters)} />
+            <QuickStat label="عمليات" value={formatArabicNumber(driver.totalFuelLogs)} />
+            <QuickStat label="محطات مفتوحة" value={formatArabicNumber(driver.activeStationCount)} />
           </div>
         </div>
+      </header>
 
-        <div className="relative mt-5 flex flex-wrap items-center justify-end gap-3">
-          <div className="inline-flex rounded-full border border-amber-200 bg-white px-4 py-2 text-sm font-black text-amber-950">
-            {driver.code}
-          </div>
-          <div
-            className={`inline-flex rounded-full px-4 py-2 text-sm font-black ${
-              driver.accountStatus === "ACTIVE"
-                ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border border-amber-200 bg-amber-100 text-amber-900"
-            }`}
-          >
-            {driverStatusLabels[driver.accountStatus]}
-          </div>
-        </div>
+      <main className="pb-24">{activeContent}</main>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur">
+        <nav className="mx-auto grid w-full max-w-md grid-cols-3">
+          {tabs.map((tab) => {
+            const isActive = tab.id === activeTab;
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleTabChange(tab.id)}
+                className={`flex min-h-16 flex-col items-center justify-center gap-1.5 ${
+                  isActive ? "text-amber-500" : "text-slate-400"
+                }`}
+              >
+                <span>{tab.icon}</span>
+                <span className="text-[11px] font-bold">{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
       </div>
-
-      <div className="bg-amber-50/85 backdrop-blur-md border border-amber-200 mt-4 rounded-[30px] p-5 shadow-2xl">
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            label="إجمالي اللترات"
-            value={formatArabicNumber(driver.totalFilledLiters)}
-            helper="كل الفترات"
-          />
-          <StatCard
-            label="سجلات التعبئة"
-            value={formatArabicNumber(driver.totalFuelLogs)}
-            helper="عمليات مؤكدة"
-          />
-          <StatCard
-            label="الشاحنات"
-            value={formatArabicNumber(driver.vehicleCount)}
-            helper="مرتبطة بالحساب"
-          />
-          <StatCard
-            label="المحطات المتاحة"
-            value={formatArabicNumber(driver.activeStationCount)}
-            helper="مفتوحة الآن"
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 flex-1">{children}</div>
 
       {isMenuOpen ? (
-        <div className="fixed inset-0 z-40">
+        <div className="fixed inset-0 z-50">
           <button
             type="button"
-            aria-label="إغلاق قائمة التنقل"
+            aria-label="إغلاق القائمة"
             onClick={() => setIsMenuOpen(false)}
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-slate-950/20"
           />
 
-          <aside className="bg-amber-50/95 backdrop-blur-md border border-amber-200 absolute left-4 right-4 top-4 z-50 rounded-[30px] p-4 text-amber-950 shadow-2xl">
-            <div className="flex items-center justify-between gap-3">
+          <aside className="absolute inset-x-4 top-4 rounded-3xl border border-slate-200 bg-white p-5 text-right shadow-xl">
+            <div className="flex items-start justify-between gap-3">
               <button
                 type="button"
-                aria-label="إغلاق القائمة"
+                aria-label="إغلاق"
                 onClick={() => setIsMenuOpen(false)}
-                className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-200 bg-white text-amber-950"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500"
               >
                 <CloseIcon />
               </button>
 
-              <div className="text-right">
-                <p className="text-xs font-bold tracking-[0.18em] text-amber-900">القائمة</p>
-                <p className="mt-2 text-lg font-black text-amber-950">{driver.fullName}</p>
+              <div>
+                <p className="text-xs font-bold tracking-[0.14em] text-slate-500">الحساب</p>
+                <p className="mt-1 text-lg font-black text-slate-950">{driver.fullName}</p>
+                <p className="mt-1 text-sm font-semibold text-slate-500">
+                  الجلسة محفوظة على هذا الجهاز
+                </p>
               </div>
             </div>
-
-            <nav className="mt-5 flex flex-col gap-3">
-              {navigationItems.map((item) => {
-                const isActive = activeNavId === item.id;
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleNavigate(item.id)}
-                    className={`flex min-h-14 items-center justify-between gap-3 rounded-2xl border px-4 text-right ${
-                      isActive
-                        ? "border-amber-300 bg-amber-200 text-amber-950"
-                        : "border-amber-200 bg-white text-amber-900"
-                    }`}
-                  >
-                    <span className={`text-base font-black ${isActive ? "text-amber-950" : "text-amber-900"}`}>
-                      {item.label}
-                    </span>
-                    <span className={isActive ? "text-amber-950" : "text-amber-900"}>
-                      {item.icon ?? <NavDot />}
-                    </span>
-                  </button>
-                );
-              })}
-            </nav>
 
             <button
               type="button"
               onClick={handleSignOut}
               disabled={isSigningOut}
-              className="mt-4 min-h-14 w-full rounded-2xl border border-amber-300 bg-white px-4 text-base font-black text-amber-950 disabled:opacity-60"
+              className="mt-5 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base font-black text-slate-700 disabled:opacity-60"
             >
               {isSigningOut ? "جارٍ تسجيل الخروج..." : "تسجيل الخروج"}
             </button>
@@ -176,43 +223,75 @@ export default function DriverDashboard({
   );
 }
 
-function StatCard({
+function cloneStatsSection(node: ReactNode, mode: "fleet" | "history") {
+  if (!isValidElement(node)) {
+    return node ?? null;
+  }
+
+  return cloneElement(node as ReactElement<{ mode?: "fleet" | "history" }>, {
+    mode,
+  });
+}
+
+function QuickStat({
   label,
   value,
-  helper,
 }: {
   label: string;
-  value: number | string;
-  helper: string;
+  value: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-amber-200 bg-white p-4 text-right">
-      <p className="text-xs font-bold tracking-[0.08em] text-amber-900">{label}</p>
-      <p className="mt-3 text-3xl font-black text-amber-950">{value}</p>
-      <p className="mt-2 text-sm font-semibold text-amber-800">{helper}</p>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+      <p className="text-lg font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-[11px] font-bold text-slate-500">{label}</p>
     </div>
   );
 }
 
-function HamburgerIcon() {
+function MenuIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-7 w-7 text-amber-950" fill="none" aria-hidden="true">
-      <path d="M4 7H20" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M4 12H20" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M4 17H20" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path d="M4 7H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M4 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
 
 function CloseIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6 text-amber-950" fill="none" aria-hidden="true">
-      <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
 
-function NavDot() {
-  return <span className="block h-2.5 w-2.5 rounded-full bg-current" aria-hidden="true" />;
+function HomeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path d="M4 10.5L12 4L20 10.5V20H4V10.5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TruckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path d="M3 7H14V16H3V7Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M14 10H18L21 13V16H14V10Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <circle cx="7" cy="18" r="2" stroke="currentColor" strokeWidth="2" />
+      <circle cx="17" cy="18" r="2" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function HistoryIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path d="M12 7V12L15.5 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 12A8 8 0 1 0 6.34 6.34" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M4 4V9H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
