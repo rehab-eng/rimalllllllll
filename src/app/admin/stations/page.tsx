@@ -1,5 +1,6 @@
 import SystemStatusCard from "../../../components/SystemStatusCard";
 import {
+  deleteStationAction,
   saveStationAction,
   toggleStationAction,
 } from "../../../features/admin/admin-actions";
@@ -39,6 +40,7 @@ export default async function AdminStationsPage() {
         stations={stationsData.stations}
         onSaveStation={saveStationAction}
         onToggleStation={toggleStationAction}
+        onDeleteStation={deleteStationAction}
       />
     </div>
   );

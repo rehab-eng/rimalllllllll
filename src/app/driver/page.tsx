@@ -30,6 +30,7 @@ import { fuelLogStatusLabels, fuelTypeLabels, formatArabicDateTime } from "../..
 import { getSql, isDatabaseConfigured } from "../../lib/prisma";
 import {
   formatScheduleWindow,
+  isVisibleStationScheduleDay,
   getStationRuntimeStatus,
   weekdayLabels,
 } from "../../lib/station-status";
@@ -325,7 +326,12 @@ export default async function DriverPage() {
 
     const stationSummaries: DriverStationSummary[] = stationsRaw.map((station) => {
       const schedules = stationScheduleMap.get(station.id) ?? [];
-      const todaySchedules = schedules.filter((schedule) => schedule.day_of_week === todayDayOfWeek);
+      const visibleSchedules = schedules.filter((schedule) =>
+        isVisibleStationScheduleDay(schedule.day_of_week),
+      );
+      const todaySchedules = visibleSchedules.filter(
+        (schedule) => schedule.day_of_week === todayDayOfWeek,
+      );
       const todayScheduleLabel =
         todaySchedules.length > 0
           ? todaySchedules
@@ -342,7 +348,7 @@ export default async function DriverPage() {
           is_active: station.is_active,
           schedules,
         }),
-        scheduleSummary: schedules.map((schedule) =>
+        scheduleSummary: visibleSchedules.map((schedule) =>
           `${weekdayLabels[schedule.day_of_week]} ${formatScheduleWindow(
             schedule.opens_at,
             schedule.closes_at,

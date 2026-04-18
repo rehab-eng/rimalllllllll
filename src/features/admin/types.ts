@@ -50,6 +50,7 @@ export type AdminStationScheduleRow = Pick<
 
 export type AdminStationRow = Pick<StationRow, "id" | "name" | "location" | "is_active"> & {
   runtimeStatus: "OPEN" | "CLOSED" | "INACTIVE";
+  isForceActive: boolean;
   schedules: AdminStationScheduleRow[];
   totalLogs: number;
 };

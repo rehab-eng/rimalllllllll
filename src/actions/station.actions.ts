@@ -1,6 +1,7 @@
 "use server";
 
 import { getSql } from "../lib/prisma";
+import { FORCE_ACTIVE_DAY_OF_WEEK } from "../lib/station-status";
 
 type ActionResponse<T> = {
   success: boolean;
@@ -137,6 +138,7 @@ export async function saveStation(
       await sql`
         DELETE FROM "StationSchedule"
         WHERE "stationId" = ${input.id}
+          AND day_of_week <> ${FORCE_ACTIVE_DAY_OF_WEEK}
       `;
 
       for (const schedule of enabledSchedules) {
@@ -195,11 +197,11 @@ export async function toggleStationActivity(
 ): Promise<ActionResponse<{ id: number; isActive: boolean }>> {
   try {
     const sql = await getSql();
-    const [station] = await sql<{ id: number; is_active: boolean }[]>`
+    const [station] = await sql<{ id: number }[]>`
       UPDATE "Station"
-      SET is_active = ${isActive}
+      SET is_active = true
       WHERE id = ${stationId}
-      RETURNING id, is_active
+      RETURNING id
     `;
 
     if (!station) {
@@ -209,12 +211,73 @@ export async function toggleStationActivity(
       };
     }
 
+    if (isActive) {
+      await sql`
+        INSERT INTO "StationSchedule" ("stationId", day_of_week, opens_at, closes_at, is_enabled)
+        SELECT ${stationId}, ${FORCE_ACTIVE_DAY_OF_WEEK}, '00:00', '23:59', true
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM "StationSchedule"
+          WHERE "stationId" = ${stationId}
+            AND day_of_week = ${FORCE_ACTIVE_DAY_OF_WEEK}
+        )
+      `;
+    } else {
+      await sql`
+        DELETE FROM "StationSchedule"
+        WHERE "stationId" = ${stationId}
+          AND day_of_week = ${FORCE_ACTIVE_DAY_OF_WEEK}
+      `;
+    }
+
     return {
       success: true,
       data: {
         id: station.id,
-        isActive: station.is_active,
+        isActive,
       },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error),
+    };
+  }
+}
+
+export async function deleteStation(
+  stationId: number,
+): Promise<ActionResponse<{ id: number }>> {
+  try {
+    const sql = await getSql();
+
+    await sql`
+      UPDATE "FuelLog"
+      SET "stationId" = NULL
+      WHERE "stationId" = ${stationId}
+    `;
+
+    await sql`
+      DELETE FROM "StationSchedule"
+      WHERE "stationId" = ${stationId}
+    `;
+
+    const [deletedStation] = await sql<{ id: number }[]>`
+      DELETE FROM "Station"
+      WHERE id = ${stationId}
+      RETURNING id
+    `;
+
+    if (!deletedStation) {
+      return {
+        success: false,
+        error: "المحطة غير موجودة.",
+      };
+    }
+
+    return {
+      success: true,
+      data: deletedStation,
     };
   } catch (error) {
     return {

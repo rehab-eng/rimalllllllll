@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 
 import type { FuelType } from "../../lib/db-types";
-import { formatArabicNumber, fuelTypeLabels, stationRuntimeStatusLabels } from "../../lib/labels";
+import {
+  formatArabicNumber,
+  fuelTypeLabels,
+  stationRuntimeStatusLabels,
+} from "../../lib/labels";
 import type {
   ActionResult,
   FuelFillPayload,
@@ -15,16 +19,12 @@ type FuelFillFormProps = {
   vehicles: FuelFillVehicleOption[];
   stations: FuelFillStationOption[];
   onSubmit: (payload: FuelFillPayload) => Promise<ActionResult> | ActionResult;
-  literOptions?: number[];
 };
-
-const defaultLiterOptions = [50, 100, 150, 200];
 
 export default function FuelFillForm({
   vehicles,
   stations,
   onSubmit,
-  literOptions = defaultLiterOptions,
 }: FuelFillFormProps) {
   const openStations = useMemo(
     () => stations.filter((station) => station.runtimeStatus === "OPEN"),
@@ -36,7 +36,7 @@ export default function FuelFillForm({
     String(openStations[0]?.id ?? stations[0]?.id ?? ""),
   );
   const [fuelType, setFuelType] = useState<FuelType>("DIESEL");
-  const [liters, setLiters] = useState<number>(literOptions[0] ?? 50);
+  const [litersInput, setLitersInput] = useState("125");
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -81,6 +81,16 @@ export default function FuelFillForm({
       return;
     }
 
+    const liters = Number(litersInput);
+
+    if (!Number.isFinite(liters) || liters <= 0) {
+      setFeedback({
+        kind: "error",
+        text: "أدخل كمية نافطة صحيحة أكبر من صفر.",
+      });
+      return;
+    }
+
     startTransition(async () => {
       const result = await onSubmit({
         vehicleId: selectedVehicle.id,
@@ -101,7 +111,7 @@ export default function FuelFillForm({
         kind: "success",
         text:
           fuelType === "DIESEL"
-            ? "تم تسجيل تعبئة الديزل بنجاح."
+            ? "تم تسجيل تعبئة النافطة بنجاح."
             : "تم تسجيل تعبئة البنزين بنجاح.",
       });
     });
@@ -113,7 +123,7 @@ export default function FuelFillForm({
         <p className="text-xs font-bold tracking-[0.16em] text-slate-500">تعبئة جديدة</p>
         <h2 className="mt-1 text-2xl font-black text-slate-950">المحطات الجاهزة الآن</h2>
         <p className="mt-2 text-sm font-semibold leading-7 text-slate-600">
-          اختر محطة مفتوحة، ثم أكد الكمية التي استلمتها بضغطة واحدة.
+          اختر محطة مفتوحة، ثم اكتب الكمية التي استلمتها فعليًا بدقة.
         </p>
 
         {openStations.length === 0 ? (
@@ -200,26 +210,22 @@ export default function FuelFillForm({
         </div>
 
         <SectionLabel title="الكمية" />
-        <div className="mt-3 grid grid-cols-4 gap-2">
-          {literOptions.map((option) => {
-            const isActive = liters === option;
-
-            return (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setLiters(option)}
-                className={`rounded-2xl border px-3 py-4 ${
-                  isActive
-                    ? "border-amber-200 bg-amber-50 text-slate-950"
-                    : "border-slate-200 bg-white text-slate-600"
-                }`}
-              >
-                <span className="block text-lg font-black">{formatArabicNumber(option)}</span>
-                <span className="mt-1 block text-[11px] font-bold">لتر</span>
-              </button>
-            );
-          })}
+        <div className="mt-3">
+          <label className="grid gap-2 text-right">
+            <span className="text-xs font-bold text-slate-500">اكتب الكمية باللتر</span>
+            <input
+              type="number"
+              min="1"
+              step="0.01"
+              lang="en-GB"
+              dir="ltr"
+              inputMode="decimal"
+              value={litersInput}
+              onChange={(event) => setLitersInput(event.target.value)}
+              placeholder="125"
+              className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-left font-sans text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
+            />
+          </label>
         </div>
 
         <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-right">

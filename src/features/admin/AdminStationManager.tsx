@@ -12,6 +12,7 @@ type AdminStationManagerProps = {
   stations: AdminStationRow[];
   onSaveStation: (payload: AdminStationFormPayload) => Promise<ActionResult> | ActionResult;
   onToggleStation: (stationId: number, isActive: boolean) => Promise<ActionResult> | ActionResult;
+  onDeleteStation: (stationId: number) => Promise<ActionResult> | ActionResult;
 };
 
 type ScheduleDraft = {
@@ -61,6 +62,7 @@ export default function AdminStationManager({
   stations,
   onSaveStation,
   onToggleStation,
+  onDeleteStation,
 }: AdminStationManagerProps) {
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
@@ -68,6 +70,7 @@ export default function AdminStationManager({
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [togglingStationId, setTogglingStationId] = useState<number | null>(null);
+  const [deletingStationId, setDeletingStationId] = useState<number | null>(null);
   const [schedules, setSchedules] = useState<ScheduleDraft[]>(createInitialSchedules);
   const [applySameTime, setApplySameTime] = useState(true);
   const [sharedOpenTime, setSharedOpenTime] = useState(defaultOpenTime);
@@ -157,7 +160,7 @@ export default function AdminStationManager({
         id: editingStationId ?? undefined,
         name,
         location,
-        isActive: editingStation?.is_active ?? true,
+        isActive: true,
         schedules: buildPayloadSchedules(),
       });
 
@@ -192,12 +195,14 @@ export default function AdminStationManager({
     setTogglingStationId(station.id);
 
     try {
-      const result = await onToggleStation(station.id, !station.is_active);
+      const result = await onToggleStation(station.id, !station.isForceActive);
       setFeedback(
         result.success
           ? {
               kind: "success",
-              text: station.is_active ? "تم إيقاف المحطة." : "تم تفعيل المحطة.",
+              text: station.isForceActive
+                ? "تم إيقاف التفعيل الفوري للمحطة."
+                : "تم تفعيل المحطة فورًا.",
             }
           : {
               kind: "error",
@@ -211,6 +216,43 @@ export default function AdminStationManager({
       });
     } finally {
       setTogglingStationId(null);
+    }
+  };
+
+  const handleDeleteStation = async (station: AdminStationRow) => {
+    if (!window.confirm(`سيتم حذف محطة "${station.name}" نهائيًا. هل تريد المتابعة؟`)) {
+      return;
+    }
+
+    setFeedback(null);
+    setDeletingStationId(station.id);
+
+    try {
+      const result = await onDeleteStation(station.id);
+
+      if (!result.success) {
+        setFeedback({
+          kind: "error",
+          text: result.error ?? "تعذر حذف المحطة.",
+        });
+        return;
+      }
+
+      if (editingStationId === station.id) {
+        resetForm();
+      }
+
+      setFeedback({
+        kind: "success",
+        text: "تم حذف المحطة بنجاح.",
+      });
+    } catch (error) {
+      setFeedback({
+        kind: "error",
+        text: error instanceof Error ? error.message : "تعذر حذف المحطة.",
+      });
+    } finally {
+      setDeletingStationId(null);
     }
   };
 
@@ -276,16 +318,25 @@ export default function AdminStationManager({
                       disabled={togglingStationId === station.id}
                       onClick={() => void handleToggleStation(station)}
                       className={`min-h-10 rounded-xl border px-4 text-sm font-black disabled:opacity-60 ${
-                        station.is_active
+                        station.isForceActive
                           ? "border-red-200 bg-red-50 text-red-600"
-                          : "border-slate-200 bg-white text-slate-700"
+                          : "border-emerald-200 bg-emerald-50 text-emerald-700"
                       }`}
                     >
                       {togglingStationId === station.id
                         ? "جارٍ التحديث..."
-                        : station.is_active
+                        : station.isForceActive
                           ? "إيقاف"
-                          : "تفعيل"}
+                          : "تفعيل فوري"}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={deletingStationId === station.id}
+                      onClick={() => void handleDeleteStation(station)}
+                      className="min-h-10 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-black text-red-600 disabled:opacity-60"
+                    >
+                      {deletingStationId === station.id ? "جارٍ الحذف..." : "حذف"}
                     </button>
                   </div>
                 </div>
@@ -488,12 +539,12 @@ function TimeInput({
     <input
       type="time"
       step={60}
-      lang="en-US"
+      lang="en-GB"
       dir="ltr"
       inputMode="numeric"
       value={value}
       onChange={(event) => onChange(normalizeTimeInput(event.target.value))}
-      className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 text-left text-sm font-bold text-slate-950 outline-none"
+      className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 text-left font-sans text-sm font-bold text-slate-950 outline-none"
     />
   );
 }

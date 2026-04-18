@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { deleteDriverAccount, updateDriverStatus } from "../../actions/driver.actions";
-import { saveStation, toggleStationActivity } from "../../actions/station.actions";
+import {
+  deleteStation,
+  saveStation,
+  toggleStationActivity,
+} from "../../actions/station.actions";
 import { DriverStatus } from "../../lib/db-types";
 import type { ActionResult } from "../driver/types";
 import type { AdminStationFormPayload } from "./types";
@@ -79,6 +83,21 @@ export async function toggleStationAction(
   isActive: boolean,
 ): Promise<ActionResult> {
   const result = await toggleStationActivity(stationId, isActive);
+
+  if (result.success) {
+    revalidatePath("/admin");
+    revalidatePath("/admin/stations");
+    revalidatePath("/driver");
+  }
+
+  return {
+    success: result.success,
+    error: result.error,
+  };
+}
+
+export async function deleteStationAction(stationId: number): Promise<ActionResult> {
+  const result = await deleteStation(stationId);
 
   if (result.success) {
     revalidatePath("/admin");

@@ -18,7 +18,7 @@ export const fuelLogStatusLabels: Record<FuelLogStatus, string> = {
 };
 
 export const fuelTypeLabels: Record<FuelType, string> = {
-  DIESEL: "ديزل",
+  DIESEL: "نافطة",
   GASOLINE: "بنزين",
 };
 

@@ -22,14 +22,6 @@ export default function AdminShell({ children }: AdminShellProps) {
   return (
     <div className="min-h-screen bg-slate-50 lg:flex lg:flex-row-reverse">
       <aside className="hidden h-screen w-72 shrink-0 border-l border-slate-200 bg-white lg:flex lg:flex-col lg:sticky lg:top-0">
-        <div className="border-b border-slate-200 px-6 py-6 text-right">
-          <p className="text-xs font-black tracking-[0.18em] text-slate-500">RIMALL ADMIN</p>
-          <h1 className="mt-2 text-2xl font-black text-slate-950">لوحة الإدارة</h1>
-          <p className="mt-2 text-sm font-semibold leading-7 text-slate-500">
-            تنقل مباشر بين الإحصائيات والمحطات والسائقين.
-          </p>
-        </div>
-
         <nav className="flex flex-1 flex-col gap-2 px-4 py-6">
           {navigationItems.map((item) => (
             <NavLink
@@ -57,8 +49,7 @@ export default function AdminShell({ children }: AdminShellProps) {
             </button>
 
             <div className="text-right">
-              <p className="text-xs font-black tracking-[0.16em] text-slate-500">RIMALL ADMIN</p>
-              <p className="mt-1 text-lg font-black text-slate-950">{getMobileTitle(pathname)}</p>
+              <p className="text-lg font-black text-slate-950">{getMobileTitle(pathname)}</p>
             </div>
           </div>
         </header>
@@ -72,7 +63,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                 key={item.href}
                 href={item.href}
                 className={`flex min-h-16 flex-col items-center justify-center gap-1 ${
-                  pathname === item.href ? "text-amber-600" : "text-slate-600"
+                  pathname === item.href ? "text-amber-600" : "text-slate-700"
                 }`}
               >
                 <span>{item.icon}</span>
@@ -103,10 +94,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                 <CloseIcon />
               </button>
 
-              <div className="text-right">
-                <p className="text-xs font-black tracking-[0.16em] text-slate-500">RIMALL ADMIN</p>
-                <p className="mt-1 text-lg font-black text-slate-950">القائمة</p>
-              </div>
+              <p className="text-lg font-black text-slate-950">القائمة</p>
             </div>
 
             <nav className="grid gap-2 px-4 py-5">
@@ -148,7 +136,7 @@ function NavLink({
       className={`flex min-h-12 items-center justify-between rounded-2xl border px-4 text-sm font-black transition-colors ${
         isActive
           ? "border-amber-200 bg-amber-50 text-amber-600"
-          : "border-slate-200 bg-white text-slate-600"
+          : "border-slate-200 bg-white text-slate-700"
       }`}
     >
       <span>{icon}</span>

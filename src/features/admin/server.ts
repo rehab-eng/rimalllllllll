@@ -1,7 +1,11 @@
 import type { AdminDriverRow, AdminFuelLogRow, AdminStationRow } from "./types";
 
 import { getSql } from "../../lib/prisma";
-import { getStationRuntimeStatus } from "../../lib/station-status";
+import {
+  FORCE_ACTIVE_DAY_OF_WEEK,
+  getStationRuntimeStatus,
+  isVisibleStationScheduleDay,
+} from "../../lib/station-status";
 
 const serializeForClient = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
@@ -85,7 +89,7 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
   const startOfNextDay = new Date(startOfDay);
   startOfNextDay.setDate(startOfNextDay.getDate() + 1);
 
-  const [fuelLogsRaw, totalLogsTodayRows, totalsRows] = await Promise.all([
+  const [fuelLogsRaw, totalLogsTodayRows, totalsRows, stationsRaw, schedulesRaw] = await Promise.all([
     sql<FuelLogRowRaw[]>`
       SELECT
         fl.id,
@@ -122,12 +126,30 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
       WHERE date >= ${startOfDay.toISOString()}
         AND date < ${startOfNextDay.toISOString()}
     `,
-    sql<{ total_drivers: number; total_stations: number; open_stations: number; total_logs: number }[]>`
+    sql<{ total_drivers: number; total_stations: number; total_logs: number }[]>`
       SELECT
         (SELECT COUNT(*)::int FROM "Driver" WHERE deleted_at IS NULL) AS total_drivers,
         (SELECT COUNT(*)::int FROM "Station") AS total_stations,
-        (SELECT COUNT(*)::int FROM "Station" WHERE is_active = true) AS open_stations,
         (SELECT COUNT(*)::int FROM "FuelLog") AS total_logs
+    `,
+    sql<StationRowRaw[]>`
+      SELECT
+        id,
+        name,
+        location,
+        is_active,
+        0::int AS total_logs
+      FROM "Station"
+    `,
+    sql<ScheduleRowRaw[]>`
+      SELECT
+        id,
+        "stationId" AS station_id,
+        day_of_week,
+        opens_at,
+        closes_at,
+        is_enabled
+      FROM "StationSchedule"
     `,
   ]);
 
@@ -168,13 +190,27 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
   );
 
   const totals = totalsRows[0];
+  const scheduleMap = new Map<number, ScheduleRowRaw[]>();
+
+  for (const schedule of schedulesRaw) {
+    const current = scheduleMap.get(schedule.station_id) ?? [];
+    current.push(schedule);
+    scheduleMap.set(schedule.station_id, current);
+  }
+
+  const openStations = stationsRaw.filter((station) =>
+    getStationRuntimeStatus({
+      is_active: station.is_active,
+      schedules: scheduleMap.get(station.id) ?? [],
+    }) === "OPEN",
+  ).length;
 
   return {
     totalLogsToday: Number(totalLogsTodayRows[0]?.total ?? 0),
     totalFuelLogs: Number(totals?.total_logs ?? 0),
     totalDrivers: Number(totals?.total_drivers ?? 0),
     totalStations: Number(totals?.total_stations ?? 0),
-    openStations: Number(totals?.open_stations ?? 0),
+    openStations,
     fuelLogs,
   };
 }
@@ -346,26 +382,32 @@ export async function getAdminStationsData(): Promise<{
   const stations = serializeForClient<AdminStationRow[]>(
     stationsRaw.map((station) => {
       const schedules = scheduleMap.get(station.id) ?? [];
+      const isForceActive = schedules.some(
+        (schedule) =>
+          schedule.is_enabled && schedule.day_of_week === FORCE_ACTIVE_DAY_OF_WEEK,
+      );
+
       return {
         id: station.id,
         name: station.name,
         location: station.location,
         is_active: station.is_active,
+        isForceActive,
         runtimeStatus: getStationRuntimeStatus({
           is_active: station.is_active,
           schedules,
         }),
-        schedules,
+        schedules: schedules.filter((schedule) =>
+          isVisibleStationScheduleDay(schedule.day_of_week),
+        ),
         totalLogs: Number(station.total_logs),
       };
     }),
   );
 
-  const summary = summaryRows[0];
-
   return {
-    totalStations: Number(summary?.total_stations ?? 0),
-    openStations: Number(summary?.open_stations ?? 0),
+    totalStations: stations.length || Number(summaryRows[0]?.total_stations ?? 0),
+    openStations: stations.filter((station) => station.runtimeStatus === "OPEN").length,
     stations,
   };
 }
