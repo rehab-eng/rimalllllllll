@@ -13,6 +13,7 @@ export type DriverVehicleSummary = {
   platesNumber: string;
   trailerPlates?: string | null;
   capacityLiters: number;
+  cubicCapacity: number;
   totalLiters: number;
   totalLogs: number;
 };
@@ -24,6 +25,7 @@ export type DriverStationSummary = {
   runtimeStatus: "OPEN" | "CLOSED" | "INACTIVE";
   isActive: boolean;
   scheduleSummary: string[];
+  todaySchedule: string | null;
 };
 
 export type DriverFuelHistoryItem = {
@@ -56,6 +58,7 @@ export type AddVehiclePayload = {
   platesNumber: string;
   trailerPlates: string;
   capacityLiters: number;
+  cubicCapacity: number;
 };
 
 export type FuelFillVehicleOption = {
@@ -63,6 +66,7 @@ export type FuelFillVehicleOption = {
   platesNumber: string;
   trailerPlates?: string | null;
   capacityLiters: number;
+  cubicCapacity: number;
 };
 
 export type FuelFillStationOption = {
@@ -77,4 +81,25 @@ export type FuelFillPayload = {
   stationId: number;
   liters: number;
   fuelType: FuelType;
+};
+
+export type DriverAuthVehicleInput = {
+  platesNumber: string;
+  trailerPlates: string;
+  capacityLiters: number;
+  cubicCapacity: number;
+};
+
+export type DriverLoginPayload = {
+  phone: string;
+  licenseNumber: string;
+  deviceToken: string;
+};
+
+export type DriverRegisterPayload = {
+  fullName: string;
+  phone: string;
+  licenseNumber: string;
+  deviceToken: string;
+  vehicles: DriverAuthVehicleInput[];
 };

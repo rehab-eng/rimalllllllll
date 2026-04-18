@@ -19,16 +19,17 @@ type RegisterDriverInput = {
     full_name: string;
     phone: string;
     license_number: string;
+    device_token: string;
   };
-  vehicle: Pick<
-    VehicleRow,
-    "plates_number" | "trailer_plates" | "capacity_liters"
+  vehicles: Array<
+    Pick<VehicleRow, "plates_number" | "trailer_plates" | "capacity_liters" | "cubic_capacity">
   >;
 };
 
 type DriverLoginInput = {
   phone?: string;
   license_number?: string;
+  device_token?: string;
 };
 
 type VehicleConsumptionSummary = {
@@ -52,6 +53,13 @@ type DriverDashboardStats = {
   vehicleConsumption: VehicleConsumptionSummary[];
 };
 
+type NormalizedVehicleInput = {
+  plates_number: string;
+  trailer_plates: string | null;
+  capacity_liters: number;
+  cubic_capacity: number;
+};
+
 const trimText = (value: string | undefined | null): string => (value ?? "").trim();
 
 const generateDriverCode = (): string => {
@@ -71,9 +79,55 @@ const getErrorMessage = (error: unknown): string => {
   return "حدث خطأ غير متوقع.";
 };
 
-export async function registerDriverWithVehicle(
+const normalizeVehicles = (
+  vehicles: RegisterDriverInput["vehicles"],
+): ActionResponse<NormalizedVehicleInput[]> => {
+  const normalizedVehicles = vehicles.map((vehicle) => ({
+    plates_number: trimText(vehicle.plates_number),
+    trailer_plates: trimText(vehicle.trailer_plates) || null,
+    capacity_liters: Number(vehicle.capacity_liters),
+    cubic_capacity: Number(vehicle.cubic_capacity),
+  }));
+
+  if (normalizedVehicles.length === 0) {
+    return {
+      success: false,
+      error: "يجب إدخال بيانات شاحنة واحدة على الأقل.",
+    };
+  }
+
+  for (const vehicle of normalizedVehicles) {
+    if (!vehicle.plates_number) {
+      return {
+        success: false,
+        error: "رقم لوحة الشاحنة مطلوب لكل مركبة.",
+      };
+    }
+
+    if (!Number.isFinite(vehicle.capacity_liters) || vehicle.capacity_liters <= 0) {
+      return {
+        success: false,
+        error: "سعة التانك باللتر يجب أن تكون أكبر من صفر.",
+      };
+    }
+
+    if (!Number.isFinite(vehicle.cubic_capacity) || vehicle.cubic_capacity <= 0) {
+      return {
+        success: false,
+        error: "تكعيب الشاحنة يجب أن يكون أكبر من صفر.",
+      };
+    }
+  }
+
+  return {
+    success: true,
+    data: normalizedVehicles,
+  };
+};
+
+export async function registerDriverWithVehicles(
   input: RegisterDriverInput,
-): Promise<ActionResponse<{ driver: DriverRow; vehicle: VehicleRow }>> {
+): Promise<ActionResponse<{ driver: DriverRow; vehicles: VehicleRow[] }>> {
   try {
     const sql = await getSql();
 
@@ -82,77 +136,109 @@ export async function registerDriverWithVehicle(
       full_name: trimText(input.driver.full_name),
       phone: trimText(input.driver.phone),
       license_number: trimText(input.driver.license_number),
-    };
-
-    const vehicleData = {
-      plates_number: trimText(input.vehicle.plates_number),
-      trailer_plates: trimText(input.vehicle.trailer_plates) || null,
-      capacity_liters: Number(input.vehicle.capacity_liters),
+      device_token: trimText(input.driver.device_token),
     };
 
     if (
       !driverData.full_name ||
       !driverData.phone ||
       !driverData.license_number ||
-      !vehicleData.plates_number
+      !driverData.device_token
     ) {
       return {
         success: false,
-        error: "يجب إدخال بيانات السائق الأساسية وبيانات الشاحنة.",
+        error: "يجب إدخال اسم السائق ورقم الهاتف ورقم الرخصة وتعريف الجهاز.",
       };
     }
 
-    if (!Number.isFinite(vehicleData.capacity_liters) || vehicleData.capacity_liters <= 0) {
+    const normalizedVehiclesResult = normalizeVehicles(input.vehicles);
+    if (!normalizedVehiclesResult.success || !normalizedVehiclesResult.data) {
       return {
         success: false,
-        error: "السعة باللتر يجب أن تكون أكبر من صفر.",
+        error: normalizedVehiclesResult.error ?? "تعذر التحقق من بيانات الشاحنات.",
       };
     }
 
+    const vehiclesJson = JSON.stringify(normalizedVehiclesResult.data);
+
     const [createdDriver] = await sql<DriverRow[]>`
-      INSERT INTO "Driver" (
-        code, full_name, phone, license_number, status, deleted_at
+      WITH new_driver AS (
+        INSERT INTO "Driver" (
+          code, full_name, phone, license_number, device_token, status, deleted_at
+        )
+        VALUES (
+          ${driverData.code},
+          ${driverData.full_name},
+          ${driverData.phone},
+          ${driverData.license_number},
+          ${driverData.device_token},
+          ${DriverStatus.ACTIVE},
+          NULL
+        )
+        RETURNING
+          id, code, full_name, phone, license_number, device_token, status, deleted_at, created_at, updated_at
+      ),
+      inserted_vehicles AS (
+        INSERT INTO "Vehicle" (
+          "driverId", plates_number, trailer_plates, capacity_liters, cubic_capacity, is_active
+        )
+        SELECT
+          nd.id,
+          payload.plates_number,
+          NULLIF(payload.trailer_plates, ''),
+          payload.capacity_liters,
+          payload.cubic_capacity,
+          true
+        FROM new_driver nd
+        CROSS JOIN jsonb_to_recordset(${vehiclesJson}::jsonb) AS payload(
+          plates_number text,
+          trailer_plates text,
+          capacity_liters numeric,
+          cubic_capacity numeric
+        )
+        RETURNING id
       )
-      VALUES (
-        ${driverData.code},
-        ${driverData.full_name},
-        ${driverData.phone},
-        ${driverData.license_number},
-        ${DriverStatus.ACTIVE},
-        NULL
-      )
-      RETURNING
-        id, code, full_name, phone, license_number, status, deleted_at, created_at, updated_at
+      SELECT
+        nd.id,
+        nd.code,
+        nd.full_name,
+        nd.phone,
+        nd.license_number,
+        nd.device_token,
+        nd.status,
+        nd.deleted_at,
+        nd.created_at,
+        nd.updated_at
+      FROM new_driver nd
+      WHERE EXISTS (SELECT 1 FROM inserted_vehicles)
     `;
 
     if (!createdDriver) {
       throw new Error("تعذر إنشاء حساب السائق.");
     }
 
-    const [createdVehicle] = await sql<VehicleRow[]>`
-      INSERT INTO "Vehicle" (
-        "driverId", plates_number, trailer_plates, capacity_liters, is_active
-      )
-      VALUES (
-        ${createdDriver.id},
-        ${vehicleData.plates_number},
-        ${vehicleData.trailer_plates},
-        ${vehicleData.capacity_liters},
-        true
-      )
-      RETURNING
-        id, "driverId", plates_number, trailer_plates, capacity_liters::float8 AS capacity_liters, is_active, created_at, updated_at
+    const createdVehicles = await sql<VehicleRow[]>`
+      SELECT
+        id,
+        "driverId",
+        plates_number,
+        trailer_plates,
+        capacity_liters::float8 AS capacity_liters,
+        cubic_capacity::float8 AS cubic_capacity,
+        is_active,
+        created_at,
+        updated_at
+      FROM "Vehicle"
+      WHERE "driverId" = ${createdDriver.id}
+        AND is_active = true
+      ORDER BY id ASC
     `;
-
-    if (!createdVehicle) {
-      throw new Error("تم إنشاء السائق وتعذر إنشاء الشاحنة.");
-    }
 
     return {
       success: true,
       data: {
         driver: createdDriver,
-        vehicle: createdVehicle,
+        vehicles: createdVehicles,
       },
     };
   } catch (error) {
@@ -170,11 +256,19 @@ export async function authenticateDriverByPhoneOrLicense(
     const sql = await getSql();
     const phone = trimText(input.phone);
     const licenseNumber = trimText(input.license_number);
+    const deviceToken = trimText(input.device_token);
 
     if (!phone && !licenseNumber) {
       return {
         success: false,
         error: "ادخل رقم الهاتف أو رقم الرخصة.",
+      };
+    }
+
+    if (!deviceToken) {
+      return {
+        success: false,
+        error: "تعذر التحقق من الجهاز الحالي.",
       };
     }
 
@@ -185,6 +279,7 @@ export async function authenticateDriverByPhoneOrLicense(
         d.full_name,
         d.phone,
         d.license_number,
+        d.device_token,
         d.status,
         d.deleted_at,
         d.created_at,
@@ -204,6 +299,34 @@ export async function authenticateDriverByPhoneOrLicense(
       return {
         success: false,
         error: "تعذر تسجيل الدخول. تحقق من بيانات السائق.",
+      };
+    }
+
+    if (driver.device_token && driver.device_token !== deviceToken) {
+      return {
+        success: false,
+        error: "هذا الحساب مرتبط بجهاز آخر، يرجى التواصل مع الإدارة",
+      };
+    }
+
+    if (!driver.device_token) {
+      const [boundDriver] = await sql<DriverRow[]>`
+        UPDATE "Driver"
+        SET
+          device_token = ${deviceToken},
+          updated_at = NOW()
+        WHERE id = ${driver.id}
+        RETURNING
+          id, code, full_name, phone, license_number, device_token, status, deleted_at, created_at, updated_at
+      `;
+
+      if (!boundDriver) {
+        throw new Error("تعذر ربط الحساب بالجهاز الحالي.");
+      }
+
+      return {
+        success: true,
+        data: boundDriver,
       };
     }
 
@@ -245,6 +368,7 @@ export async function getDriverDashboardStatsByCode(
         d.full_name,
         d.phone,
         d.license_number,
+        d.device_token,
         d.status,
         d.deleted_at,
         d.created_at,
@@ -285,6 +409,7 @@ export async function getDriverDashboardStatsByCode(
         v.plates_number,
         v.trailer_plates,
         v.capacity_liters::float8 AS capacity_liters,
+        v.cubic_capacity::float8 AS cubic_capacity,
         v.is_active,
         v.created_at,
         v.updated_at,

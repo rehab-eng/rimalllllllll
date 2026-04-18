@@ -9,20 +9,17 @@ import type { ActionResult, AddVehiclePayload, DriverVehicleSummary } from "./ty
 type AddVehicleFormProps = {
   existingVehicles: DriverVehicleSummary[];
   onSubmit: (payload: AddVehiclePayload) => Promise<ActionResult> | ActionResult;
-  capacityOptions?: number[];
 };
-
-const defaultCapacityOptions = [8000, 12000, 16000, 20000, 24000];
 
 export default function AddVehicleForm({
   existingVehicles,
   onSubmit,
-  capacityOptions = defaultCapacityOptions,
 }: AddVehicleFormProps) {
   const [isFormOpen, setIsFormOpen] = useState(existingVehicles.length === 0);
   const [platesNumber, setPlatesNumber] = useState("");
   const [trailerPlates, setTrailerPlates] = useState("");
-  const [capacityLiters, setCapacityLiters] = useState(capacityOptions[0] ?? 8000);
+  const [capacityLiters, setCapacityLiters] = useState<number | "">("");
+  const [cubicCapacity, setCubicCapacity] = useState<number | "">("");
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -31,7 +28,8 @@ export default function AddVehicleForm({
   const resetForm = () => {
     setPlatesNumber("");
     setTrailerPlates("");
-    setCapacityLiters(capacityOptions[0] ?? 8000);
+    setCapacityLiters("");
+    setCubicCapacity("");
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -41,15 +39,26 @@ export default function AddVehicleForm({
     if (!platesNumber.trim()) {
       setFeedback({
         kind: "error",
-        text: "رقم لوحة السيارة مطلوب.",
+        text: "رقم لوحة الشاحنة مطلوب.",
       });
       return;
     }
 
-    if (!Number.isFinite(capacityLiters) || capacityLiters <= 0) {
+    const numericCapacity = Number(capacityLiters);
+    const numericCubic = Number(cubicCapacity);
+
+    if (!Number.isFinite(numericCapacity) || numericCapacity <= 0) {
       setFeedback({
         kind: "error",
-        text: "سعة الشاحنة باللتر يجب أن تكون أكبر من صفر.",
+        text: "سعة التانك يجب أن تكون أكبر من صفر.",
+      });
+      return;
+    }
+
+    if (!Number.isFinite(numericCubic) || numericCubic <= 0) {
+      setFeedback({
+        kind: "error",
+        text: "تكعيب الشاحنة يجب أن يكون أكبر من صفر.",
       });
       return;
     }
@@ -58,7 +67,8 @@ export default function AddVehicleForm({
       const result = await onSubmit({
         platesNumber: platesNumber.trim(),
         trailerPlates: trailerPlates.trim(),
-        capacityLiters,
+        capacityLiters: numericCapacity,
+        cubicCapacity: numericCubic,
       });
 
       if (!result.success) {
@@ -80,7 +90,7 @@ export default function AddVehicleForm({
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-4 text-amber-950">
-      <section className="bg-amber-50/85 backdrop-blur-md border border-amber-200 rounded-[28px] p-5 shadow-2xl">
+      <section className="rounded-[28px] border border-amber-200 bg-amber-50/85 p-5 shadow-2xl backdrop-blur-md">
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
@@ -116,7 +126,10 @@ export default function AddVehicleForm({
                 <p className="text-sm font-black text-amber-900">{`الشاحنة ${index + 1}`}</p>
                 <p className="mt-2 text-base font-bold text-amber-950">{vehicle.platesNumber}</p>
                 <p className="mt-1 text-sm font-semibold text-amber-900">
-                  السعة: {formatArabicNumber(vehicle.capacityLiters)} لتر
+                  سعة التانك: {formatArabicNumber(vehicle.capacityLiters)} لتر
+                </p>
+                <p className="mt-1 text-sm font-semibold text-amber-900">
+                  التكعيب: {formatArabicNumber(vehicle.cubicCapacity)}
                 </p>
               </div>
             ))}
@@ -125,7 +138,7 @@ export default function AddVehicleForm({
 
         {isFormOpen ? (
           <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
-            <Field label="رقم لوحة السيارة">
+            <Field label="رقم لوحة الشاحنة">
               <input
                 value={platesNumber}
                 onChange={(event) => setPlatesNumber(event.target.value)}
@@ -143,19 +156,30 @@ export default function AddVehicleForm({
               />
             </Field>
 
-            <Field label="السعة / التكعيب باللتر">
-              <select
-                value={capacityLiters}
-                onChange={(event) => setCapacityLiters(Number(event.target.value))}
-                className="min-h-14 rounded-2xl border border-amber-200 bg-white px-4 text-base font-bold text-amber-950 outline-none"
-              >
-                {capacityOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {formatArabicNumber(option)} لتر
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="سعة التانك باللتر">
+                <input
+                  type="number"
+                  min="0"
+                  value={capacityLiters}
+                  onChange={(event) => setCapacityLiters(event.target.value ? Number(event.target.value) : "")}
+                  placeholder="16000"
+                  className="min-h-14 rounded-2xl border border-amber-200 bg-white px-4 text-base font-bold text-amber-950 outline-none placeholder:text-amber-700/60"
+                />
+              </Field>
+
+              <Field label="تكعيب الشاحنة">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={cubicCapacity}
+                  onChange={(event) => setCubicCapacity(event.target.value ? Number(event.target.value) : "")}
+                  placeholder="45"
+                  className="min-h-14 rounded-2xl border border-amber-200 bg-white px-4 text-base font-bold text-amber-950 outline-none placeholder:text-amber-700/60"
+                />
+              </Field>
+            </div>
 
             {feedback ? (
               <div

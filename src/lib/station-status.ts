@@ -32,8 +32,20 @@ const parseTimeToMinutes = (value: string): number => {
   return hours * 60 + minutes;
 };
 
+const normalizeTimeForDisplay = (value: string): string => {
+  if (/^\d{2}:\d{2}$/.test(value)) {
+    return value;
+  }
+
+  if (/^\d{2}:\d{2}:\d{2}$/.test(value)) {
+    return value.slice(0, 5);
+  }
+
+  return value;
+};
+
 export const formatScheduleWindow = (opensAt: string, closesAt: string): string =>
-  `${opensAt} - ${closesAt}`;
+  `${normalizeTimeForDisplay(opensAt)} - ${normalizeTimeForDisplay(closesAt)}`;
 
 export const getStationRuntimeStatus = (
   station: StationLike,

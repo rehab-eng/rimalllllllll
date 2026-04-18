@@ -1,12 +1,15 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
-import { authenticateDriverByPhoneOrLicense } from "../../actions/driver.actions";
+import {
+  authenticateDriverByPhoneOrLicense,
+  registerDriverWithVehicles,
+} from "../../actions/driver.actions";
 import { logFuelEntry } from "../../actions/fuel.actions";
 import SystemStatusCard from "../../components/SystemStatusCard";
 import AddVehicleForm from "../../features/driver/AddVehicleForm";
 import DriverDashboard from "../../features/driver/DriverDashboard";
-import DriverLoginForm, { type DriverLoginPayload } from "../../features/driver/DriverLoginForm";
+import DriverLoginForm from "../../features/driver/DriverLoginForm";
 import DriverStationsBoard from "../../features/driver/DriverStationsBoard";
 import DriverVehicleStats from "../../features/driver/DriverVehicleStats";
 import FuelFillForm from "../../features/driver/FuelFillForm";
@@ -14,6 +17,8 @@ import type {
   ActionResult,
   AddVehiclePayload,
   DriverFuelHistoryItem,
+  DriverLoginPayload,
+  DriverRegisterPayload,
   DriverStationSummary,
   DriverVehicleSummary,
   FuelFillPayload,
@@ -33,9 +38,10 @@ export const dynamic = "force-dynamic";
 // force cloudflare update
 
 const DRIVER_SESSION_COOKIE = "rimall_driver_session";
+const DRIVER_SESSION_MAX_AGE = 60 * 60 * 24 * 180;
 
 const pageBackground =
-  "min-h-screen bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.2),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(146,64,14,0.14),transparent_35%),linear-gradient(135deg,#fffbeb_0%,#fef3c7_42%,#fde68a_100%)]";
+  "min-h-screen bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.18),transparent_28%),linear-gradient(180deg,#f8fafc_0%,#fff7ed_100%)]";
 
 type DriverRaw = {
   id: number;
@@ -54,7 +60,7 @@ export default async function DriverPage() {
       <main className={pageBackground}>
         <SystemStatusCard
           title="بوابة السائق غير مهيأة بعد"
-          description="البوابة تحتاج اتصالًا بقاعدة البيانات، لكن DATABASE_URL غير موجود."
+          description="البوابة تحتاج اتصالاً بقاعدة البيانات، لكن DATABASE_URL غير موجود."
           details="أضف DATABASE_URL في Cloudflare Workers ثم أعد النشر."
         />
       </main>
@@ -103,6 +109,7 @@ export default async function DriverPage() {
         const result = await authenticateDriverByPhoneOrLicense({
           phone: payload.phone,
           license_number: payload.licenseNumber,
+          device_token: payload.deviceToken,
         });
 
         if (!result.success || !result.data) {
@@ -118,7 +125,7 @@ export default async function DriverPage() {
           httpOnly: true,
           sameSite: "lax",
           secure: process.env.NODE_ENV === "production",
-          maxAge: 60 * 60 * 24 * 30,
+          maxAge: DRIVER_SESSION_MAX_AGE,
         });
 
         revalidatePath("/driver");
@@ -128,10 +135,52 @@ export default async function DriverPage() {
         };
       }
 
+      async function handleRegister(payload: DriverRegisterPayload): Promise<ActionResult> {
+        "use server";
+
+        const result = await registerDriverWithVehicles({
+          driver: {
+            full_name: payload.fullName,
+            phone: payload.phone,
+            license_number: payload.licenseNumber,
+            device_token: payload.deviceToken,
+          },
+          vehicles: payload.vehicles.map((vehicle) => ({
+            plates_number: vehicle.platesNumber,
+            trailer_plates: vehicle.trailerPlates,
+            capacity_liters: vehicle.capacityLiters,
+            cubic_capacity: vehicle.cubicCapacity,
+          })),
+        });
+
+        if (!result.success || !result.data) {
+          return {
+            success: false,
+            error: result.error ?? "تعذر إنشاء الحساب.",
+          };
+        }
+
+        const store = await cookies();
+        store.set(DRIVER_SESSION_COOKIE, String(result.data.driver.id), {
+          path: "/",
+          httpOnly: true,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          maxAge: DRIVER_SESSION_MAX_AGE,
+        });
+
+        revalidatePath("/driver");
+        revalidatePath("/admin");
+
+        return {
+          success: true,
+        };
+      }
+
       return (
         <main className={pageBackground}>
-          <div className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
-            <DriverLoginForm onLogin={handleLogin} />
+          <div className="mx-auto flex min-h-screen max-w-6xl items-center px-4 py-10">
+            <DriverLoginForm onLogin={handleLogin} onRegister={handleRegister} />
           </div>
         </main>
       );
@@ -145,13 +194,15 @@ export default async function DriverPage() {
             plates_number: string;
             trailer_plates: string | null;
             capacity_liters: number;
+            cubic_capacity: number;
           }[]
         >`
           SELECT
             id,
             plates_number,
             trailer_plates,
-            capacity_liters::float8 AS capacity_liters
+            capacity_liters::float8 AS capacity_liters,
+            cubic_capacity::float8 AS cubic_capacity
           FROM "Vehicle"
           WHERE "driverId" = ${sessionDriver.id}
             AND is_active = true
@@ -273,8 +324,18 @@ export default async function DriverPage() {
       stationScheduleMap.set(schedule.station_id, current);
     }
 
+    const todayDayOfWeek = new Date().getDay();
+
     const stationSummaries: DriverStationSummary[] = stationsRaw.map((station) => {
       const schedules = stationScheduleMap.get(station.id) ?? [];
+      const todaySchedules = schedules.filter((schedule) => schedule.day_of_week === todayDayOfWeek);
+      const todayScheduleLabel =
+        todaySchedules.length > 0
+          ? todaySchedules
+              .map((schedule) => formatScheduleWindow(schedule.opens_at, schedule.closes_at))
+              .join(" ، ")
+          : null;
+
       return {
         id: station.id,
         name: station.name,
@@ -290,6 +351,7 @@ export default async function DriverPage() {
             schedule.closes_at,
           )}`,
         ),
+        todaySchedule: todayScheduleLabel,
       };
     });
 
@@ -300,6 +362,7 @@ export default async function DriverPage() {
         platesNumber: vehicle.plates_number,
         trailerPlates: vehicle.trailer_plates,
         capacityLiters: Number(vehicle.capacity_liters),
+        cubicCapacity: Number(vehicle.cubic_capacity),
         totalLiters: aggregate?.totalLiters ?? 0,
         totalLogs: aggregate?.totalLogs ?? 0,
       };
@@ -310,6 +373,7 @@ export default async function DriverPage() {
       platesNumber: vehicle.platesNumber,
       trailerPlates: vehicle.trailerPlates,
       capacityLiters: vehicle.capacityLiters,
+      cubicCapacity: vehicle.cubicCapacity,
     }));
 
     const fuelStations: FuelFillStationOption[] = stationSummaries.map((station) => ({
@@ -335,11 +399,19 @@ export default async function DriverPage() {
       const platesNumber = payload.platesNumber.trim();
       const trailerPlates = payload.trailerPlates.trim();
       const capacityLiters = Number(payload.capacityLiters);
+      const cubicCapacity = Number(payload.cubicCapacity);
 
       if (!platesNumber || !Number.isFinite(capacityLiters) || capacityLiters <= 0) {
         return {
           success: false,
-          error: "يجب إدخال رقم اللوحة وسعة صحيحة باللتر.",
+          error: "يجب إدخال رقم اللوحة وسعة تانك صحيحة.",
+        };
+      }
+
+      if (!Number.isFinite(cubicCapacity) || cubicCapacity <= 0) {
+        return {
+          success: false,
+          error: "يجب إدخال تكعيب صحيح للشاحنة.",
         };
       }
 
@@ -347,18 +419,20 @@ export default async function DriverPage() {
         const sql = await getSql();
         await sql`
           INSERT INTO "Vehicle" (
-            "driverId", plates_number, trailer_plates, capacity_liters, is_active
+            "driverId", plates_number, trailer_plates, capacity_liters, cubic_capacity, is_active
           )
           VALUES (
             ${sessionDriver.id},
             ${platesNumber},
             ${trailerPlates || null},
             ${capacityLiters},
+            ${cubicCapacity},
             true
           )
         `;
 
         revalidatePath("/driver");
+        revalidatePath("/admin");
 
         return {
           success: true,

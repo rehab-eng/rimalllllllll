@@ -11,7 +11,7 @@ export default function DriverVehicleStats({
   recentFuelLogs,
 }: DriverVehicleStatsProps) {
   return (
-    <section className="bg-amber-50/85 backdrop-blur-md border border-amber-200 rounded-[28px] p-5 shadow-2xl">
+    <section className="rounded-[28px] border border-amber-200 bg-amber-50/85 p-5 shadow-2xl backdrop-blur-md">
       <div className="text-right">
         <p className="text-xs font-bold tracking-[0.14em] text-amber-900">شاحناتي</p>
         <h3 className="mt-2 text-2xl font-black text-amber-950">استهلاك الوقود لكل شاحنة</h3>
@@ -35,7 +35,10 @@ export default function DriverVehicleStats({
                 <p className="text-sm font-black text-amber-900">{`الشاحنة ${index + 1}`}</p>
                 <p className="mt-2 text-xl font-black text-amber-950">{vehicle.platesNumber}</p>
                 <p className="mt-1 text-sm font-semibold text-amber-900">
-                  السعة: {formatArabicNumber(vehicle.capacityLiters)} لتر
+                  سعة التانك: {formatArabicNumber(vehicle.capacityLiters)} لتر
+                </p>
+                <p className="mt-1 text-sm font-semibold text-amber-900">
+                  التكعيب: {formatArabicNumber(vehicle.cubicCapacity)}
                 </p>
               </div>
             </div>
@@ -54,9 +57,7 @@ export default function DriverVehicleStats({
         <div className="mt-3 grid gap-3">
           {recentFuelLogs.length === 0 ? (
             <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-              <p className="text-sm font-semibold text-amber-900">
-                لا توجد عمليات تعبئة حديثة بعد.
-              </p>
+              <p className="text-sm font-semibold text-amber-900">لا توجد عمليات تعبئة حديثة بعد.</p>
             </div>
           ) : (
             recentFuelLogs.map((log) => (

@@ -9,7 +9,7 @@ export default function DriverStationsBoard({ stations }: DriverStationsBoardPro
   const availableStations = stations.filter((station) => station.runtimeStatus === "OPEN");
 
   return (
-    <section className="bg-amber-50/85 backdrop-blur-md border border-amber-200 rounded-[28px] p-5 shadow-2xl">
+    <section className="rounded-[28px] border border-amber-200 bg-amber-50/85 p-5 shadow-2xl backdrop-blur-md">
       <div className="flex items-center justify-between gap-3">
         <span className="rounded-full border border-amber-300 bg-white px-3 py-1 text-sm font-black text-amber-900">
           {availableStations.length}
@@ -33,7 +33,7 @@ export default function DriverStationsBoard({ stations }: DriverStationsBoardPro
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-black ${
                     station.runtimeStatus === "OPEN"
-                      ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                      ? "border border-emerald-200 bg-emerald-100 text-emerald-800"
                       : "border border-amber-200 bg-amber-50 text-amber-800"
                   }`}
                 >
@@ -48,11 +48,17 @@ export default function DriverStationsBoard({ stations }: DriverStationsBoardPro
                 </div>
               </div>
 
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                <p className="text-sm font-black text-amber-900">
+                  ساعات اليوم: {station.todaySchedule ?? "لا يوجد دوام مفعّل لهذا اليوم"}
+                </p>
+              </div>
+
               <div className="mt-4 flex flex-wrap justify-end gap-2">
                 {station.scheduleSummary.map((entry) => (
                   <span
                     key={`${station.id}-${entry}`}
-                    className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900"
+                    className="rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-bold text-amber-900"
                   >
                     {entry}
                   </span>

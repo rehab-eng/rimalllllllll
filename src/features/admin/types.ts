@@ -25,15 +25,23 @@ export type AdminFuelLogRow = FuelLogRow & {
   station?: Pick<StationRow, "id" | "name" | "location" | "is_active"> | null;
 };
 
+export type AdminDriverVehicleRow = Pick<
+  VehicleRow,
+  "id" | "plates_number" | "trailer_plates" | "capacity_liters" | "cubic_capacity"
+>;
+
 export type AdminDriverRow = {
   id: number;
   code: string;
   fullName: string;
   phone: string;
+  licenseNumber: string | null;
+  deviceToken: string | null;
   status: DriverStatus;
   vehicleCount: number;
   totalFuelLogs: number;
   totalFilledLiters: number;
+  vehicles: AdminDriverVehicleRow[];
 };
 
 export type AdminStationScheduleRow = Pick<

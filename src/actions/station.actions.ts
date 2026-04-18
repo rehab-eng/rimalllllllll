@@ -33,10 +33,23 @@ const getErrorMessage = (error: unknown): string => {
   return "حدث خطأ غير متوقع.";
 };
 
-const isTimeValue = (value: string): boolean => /^\d{2}:\d{2}$/.test(value);
+const timePattern = /^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/;
+
+const normalizeTimeValue = (value: string): string | null => {
+  const normalized = trimText(value);
+  const match = normalized.match(timePattern);
+
+  if (!match) {
+    return null;
+  }
+
+  const hours = match[1];
+  const minutes = match[2];
+  return `${hours}:${minutes}`;
+};
+
 const toMinutes = (value: string): number => {
   const [hours, minutes] = value.split(":").map(Number);
-
   return hours * 60 + minutes;
 };
 
@@ -47,14 +60,13 @@ export async function saveStation(
     const sql = await getSql();
     const name = trimText(input.name);
     const location = trimText(input.location) || null;
-    const schedules = input.schedules
-      .filter((schedule) => schedule.isEnabled)
-      .map((schedule) => ({
-        day_of_week: schedule.dayOfWeek,
-        opens_at: schedule.opensAt,
-        closes_at: schedule.closesAt,
-        is_enabled: schedule.isEnabled,
-      }));
+
+    const schedules = input.schedules.map((schedule) => ({
+      day_of_week: schedule.dayOfWeek,
+      opens_at: normalizeTimeValue(schedule.opensAt),
+      closes_at: normalizeTimeValue(schedule.closesAt),
+      is_enabled: schedule.isEnabled,
+    }));
 
     if (!name) {
       return {
@@ -65,19 +77,50 @@ export async function saveStation(
 
     if (
       schedules.some(
-        (schedule) => !isTimeValue(schedule.opens_at) || !isTimeValue(schedule.closes_at),
+        (schedule) =>
+          schedule.day_of_week < 0 ||
+          schedule.day_of_week > 6 ||
+          !Number.isInteger(schedule.day_of_week),
       )
     ) {
       return {
         success: false,
-        error: "يجب إدخال وقت افتتاح ووقت إغلاق صالحين لكل يوم مفعّل.",
+        error: "اليوم المحدد غير صالح.",
       };
     }
 
-    if (schedules.some((schedule) => toMinutes(schedule.opens_at) >= toMinutes(schedule.closes_at))) {
+    if (
+      schedules.some(
+        (schedule) => schedule.is_enabled && (!schedule.opens_at || !schedule.closes_at),
+      )
+    ) {
+      return {
+        success: false,
+        error: "أدخل وقتًا صالحًا (ساعة:دقيقة) لكل يوم مفعّل.",
+      };
+    }
+
+    if (
+      schedules.some(
+        (schedule) =>
+          schedule.is_enabled &&
+          schedule.opens_at &&
+          schedule.closes_at &&
+          toMinutes(schedule.opens_at) >= toMinutes(schedule.closes_at),
+      )
+    ) {
       return {
         success: false,
         error: "وقت الإغلاق يجب أن يكون بعد وقت الافتتاح.",
+      };
+    }
+
+    const enabledSchedules = schedules.filter((schedule) => schedule.is_enabled);
+
+    if (enabledSchedules.length === 0) {
+      return {
+        success: false,
+        error: "فعّل يومًا واحدًا على الأقل للمحطة.",
       };
     }
 
@@ -96,7 +139,11 @@ export async function saveStation(
         WHERE "stationId" = ${input.id}
       `;
 
-      for (const schedule of schedules) {
+      for (const schedule of enabledSchedules) {
+        if (!schedule.opens_at || !schedule.closes_at) {
+          continue;
+        }
+
         await sql`
           INSERT INTO "StationSchedule" ("stationId", day_of_week, opens_at, closes_at, is_enabled)
           VALUES (${input.id}, ${schedule.day_of_week}, ${schedule.opens_at}, ${schedule.closes_at}, ${schedule.is_enabled})
@@ -119,7 +166,11 @@ export async function saveStation(
       throw new Error("تعذر إنشاء المحطة.");
     }
 
-    for (const schedule of schedules) {
+    for (const schedule of enabledSchedules) {
+      if (!schedule.opens_at || !schedule.closes_at) {
+        continue;
+      }
+
       await sql`
         INSERT INTO "StationSchedule" ("stationId", day_of_week, opens_at, closes_at, is_enabled)
         VALUES (${createdStation.id}, ${schedule.day_of_week}, ${schedule.opens_at}, ${schedule.closes_at}, ${schedule.is_enabled})
