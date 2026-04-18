@@ -544,7 +544,7 @@ function TimeInput({
       inputMode="numeric"
       value={value}
       onChange={(event) => onChange(normalizeTimeInput(event.target.value))}
-      className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 text-left font-sans text-sm font-bold text-slate-950 outline-none"
+      className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 text-left font-sans text-sm font-bold text-slate-800 outline-none"
     />
   );
 }

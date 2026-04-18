@@ -63,7 +63,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                 key={item.href}
                 href={item.href}
                 className={`flex min-h-16 flex-col items-center justify-center gap-1 ${
-                  pathname === item.href ? "text-amber-600" : "text-slate-700"
+                  pathname === item.href ? "text-amber-600" : "text-slate-800"
                 }`}
               >
                 <span>{item.icon}</span>
@@ -136,7 +136,7 @@ function NavLink({
       className={`flex min-h-12 items-center justify-between rounded-2xl border px-4 text-sm font-black transition-colors ${
         isActive
           ? "border-amber-200 bg-amber-50 text-amber-600"
-          : "border-slate-200 bg-white text-slate-700"
+          : "border-slate-200 bg-white text-slate-800"
       }`}
     >
       <span>{icon}</span>
