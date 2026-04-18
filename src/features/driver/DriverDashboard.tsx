@@ -203,7 +203,7 @@ export default function DriverDashboard({
                 <p className="text-xs font-bold tracking-[0.14em] text-slate-500">الحساب</p>
                 <p className="mt-1 text-lg font-black text-slate-950">{driver.fullName}</p>
                 <p className="mt-1 text-sm font-semibold text-slate-500">
-                  الجلسة محفوظة على هذا الجهاز
+                  الجلسة محفوظة حالياً
                 </p>
               </div>
             </div>

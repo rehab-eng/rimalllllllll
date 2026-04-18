@@ -36,7 +36,6 @@ export type AdminDriverRow = {
   fullName: string;
   phone: string;
   licenseNumber: string | null;
-  deviceToken: string | null;
   status: DriverStatus;
   vehicleCount: number;
   totalFuelLogs: number;

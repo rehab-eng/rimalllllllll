@@ -108,7 +108,6 @@ export default async function DriverPage() {
         const result = await authenticateDriverByPhoneOrLicense({
           phone: payload.phone,
           license_number: payload.licenseNumber,
-          device_token: payload.deviceToken,
         });
 
         if (!result.success || !result.data) {
@@ -142,7 +141,6 @@ export default async function DriverPage() {
             full_name: payload.fullName,
             phone: payload.phone,
             license_number: payload.licenseNumber,
-            device_token: payload.deviceToken,
           },
           vehicles: payload.vehicles.map((vehicle) => ({
             plates_number: vehicle.platesNumber,

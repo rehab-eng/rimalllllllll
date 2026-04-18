@@ -44,6 +44,19 @@ const normalizeTimeInput = (value: string): string => {
   return "";
 };
 
+const scheduleHasSameTime = (schedules: ScheduleDraft[]) => {
+  const enabled = schedules.filter((schedule) => schedule.isEnabled);
+
+  if (enabled.length <= 1) {
+    return true;
+  }
+
+  return enabled.every(
+    (schedule) =>
+      schedule.opensAt === enabled[0]?.opensAt && schedule.closesAt === enabled[0]?.closesAt,
+  );
+};
+
 export default function AdminStationManager({
   stations,
   onSaveStation,
@@ -55,6 +68,9 @@ export default function AdminStationManager({
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [schedules, setSchedules] = useState<ScheduleDraft[]>(createInitialSchedules);
+  const [applySameTime, setApplySameTime] = useState(true);
+  const [sharedOpenTime, setSharedOpenTime] = useState(defaultOpenTime);
+  const [sharedCloseTime, setSharedCloseTime] = useState(defaultCloseTime);
 
   const editingStation = useMemo(
     () => stations.find((station) => station.id === editingStationId) ?? null,
@@ -67,6 +83,18 @@ export default function AdminStationManager({
         schedule.dayOfWeek === dayOfWeek ? { ...schedule, ...patch } : schedule,
       ),
     );
+  };
+
+  const buildPayloadSchedules = () => {
+    if (!applySameTime) {
+      return schedules;
+    }
+
+    return schedules.map((schedule) => ({
+      ...schedule,
+      opensAt: sharedOpenTime,
+      closesAt: sharedCloseTime,
+    }));
   };
 
   const hydrateFromStation = (station: AdminStationRow) => {
@@ -83,18 +111,28 @@ export default function AdminStationManager({
       target.isEnabled = Boolean(dbSchedule.is_enabled);
     }
 
+    const useSharedTime = scheduleHasSameTime(nextSchedules);
+    const firstEnabled = nextSchedules.find((schedule) => schedule.isEnabled);
+
     setEditingStationId(station.id);
     setName(station.name);
     setLocation(station.location ?? "");
     setSchedules(nextSchedules);
+    setApplySameTime(useSharedTime);
+    setSharedOpenTime(firstEnabled?.opensAt ?? defaultOpenTime);
+    setSharedCloseTime(firstEnabled?.closesAt ?? defaultCloseTime);
     setFeedback(null);
   };
 
   const resetForm = () => {
+    const initialSchedules = createInitialSchedules();
     setEditingStationId(null);
     setName("");
     setLocation("");
-    setSchedules(createInitialSchedules());
+    setSchedules(initialSchedules);
+    setApplySameTime(true);
+    setSharedOpenTime(defaultOpenTime);
+    setSharedCloseTime(defaultCloseTime);
     setFeedback(null);
   };
 
@@ -108,7 +146,7 @@ export default function AdminStationManager({
         name,
         location,
         isActive: editingStation?.is_active ?? true,
-        schedules,
+        schedules: buildPayloadSchedules(),
       });
 
       if (!result.success) {
@@ -132,22 +170,22 @@ export default function AdminStationManager({
 
   return (
     <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
         <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 text-right">
-          <p className="text-xs font-black tracking-[0.18em] text-slate-500">STATIONS</p>
-          <h3 className="mt-2 text-2xl font-black text-slate-950">المحطات الحالية</h3>
-          <p className="mt-2 text-sm font-semibold text-slate-500">
-            تعديل الحالة والجدول الزمني لكل محطة من نفس الشاشة.
+          <p className="text-xs font-black tracking-[0.18em] text-slate-500">STATIONS LIST</p>
+          <h2 className="mt-2 text-2xl font-black text-slate-950">المحطات الحالية</h2>
+          <p className="mt-2 text-sm font-semibold leading-7 text-slate-500">
+            تعديل الحالة أو فتح نموذج التعديل لكل محطة من نفس الصفحة.
           </p>
 
           <div className="mt-5 grid gap-3">
             {stations.length === 0 ? (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                 <p className="text-base font-black text-slate-700">لم يتم إعداد أي محطة بعد.</p>
               </div>
             ) : (
               stations.map((station) => (
-                <div key={station.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div key={station.id} className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-black ${
@@ -167,14 +205,13 @@ export default function AdminStationManager({
                     </div>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  <div className="mt-3 flex flex-wrap justify-end gap-2">
                     {station.schedules.map((schedule) => (
                       <span
                         key={schedule.id}
                         className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600"
                       >
-                        {weekdayLabels[schedule.day_of_week]}{" "}
-                        {formatScheduleWindow(schedule.opens_at, schedule.closes_at)}
+                        {weekdayLabels[schedule.day_of_week]} {formatScheduleWindow(schedule.opens_at, schedule.closes_at)}
                       </span>
                     ))}
                   </div>
@@ -185,7 +222,7 @@ export default function AdminStationManager({
                       onClick={() => hydrateFromStation(station)}
                       className="min-h-10 rounded-xl border border-amber-500 bg-amber-500 px-4 text-sm font-black text-white"
                     >
-                      تعديل المحطة
+                      تعديل
                     </button>
 
                     <button
@@ -233,9 +270,9 @@ export default function AdminStationManager({
 
             <div>
               <p className="text-xs font-black tracking-[0.18em] text-slate-500">STATION FORM</p>
-              <h2 className="mt-2 text-2xl font-black text-slate-950">
-                {editingStationId ? "تعديل محطة" : "إضافة محطة جديدة"}
-              </h2>
+              <h3 className="mt-2 text-2xl font-black text-slate-950">
+                {editingStationId ? "تعديل المحطة" : "إضافة محطة"}
+              </h3>
             </div>
           </div>
 
@@ -245,7 +282,7 @@ export default function AdminStationManager({
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 placeholder="مثال: محطة الجبو"
-                className="min-h-14 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
+                className="min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
               />
             </Field>
 
@@ -254,66 +291,121 @@ export default function AdminStationManager({
                 value={location}
                 onChange={(event) => setLocation(event.target.value)}
                 placeholder="مثال: الساحة الشمالية"
-                className="min-h-14 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
+                className="min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
               />
             </Field>
 
-            <div>
-              <p className="text-sm font-black text-slate-800">أيام العمل وساعات التشغيل</p>
-              <p className="mt-1 text-xs font-semibold text-slate-500">
-                Time Picker حر بالدقيقة لكل يوم.
-              </p>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={applySameTime}
+                    onChange={(event) => setApplySameTime(event.target.checked)}
+                    className="h-5 w-5 accent-amber-500"
+                  />
+                  <span className="text-sm font-black text-slate-800">تطبيق نفس الوقت على كل الأيام</span>
+                </label>
 
-              <div className="mt-3 grid gap-3">
+                <div className="text-right">
+                  <p className="text-sm font-black text-slate-950">أيام العمل</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">اختر الأيام التي تعمل فيها المحطة</p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap justify-end gap-2">
                 {schedules.map((schedule) => (
-                  <div
+                  <button
                     key={schedule.dayOfWeek}
-                    className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_180px] xl:items-end"
+                    type="button"
+                    onClick={() =>
+                      updateSchedule(schedule.dayOfWeek, { isEnabled: !schedule.isEnabled })
+                    }
+                    className={`rounded-full border px-3 py-2 text-sm font-black ${
+                      schedule.isEnabled
+                        ? "border-amber-200 bg-amber-50 text-amber-700"
+                        : "border-slate-200 bg-white text-slate-500"
+                    }`}
                   >
-                    <TimeField label="وقت الإغلاق">
-                      <input
-                        type="time"
-                        step={60}
-                        value={schedule.closesAt}
-                        onChange={(event) =>
-                          updateSchedule(schedule.dayOfWeek, {
-                            closesAt: normalizeTimeInput(event.target.value),
-                          })
-                        }
-                        className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-950 outline-none"
-                      />
-                    </TimeField>
-
-                    <TimeField label="وقت الافتتاح">
-                      <input
-                        type="time"
-                        step={60}
-                        value={schedule.opensAt}
-                        onChange={(event) =>
-                          updateSchedule(schedule.dayOfWeek, {
-                            opensAt: normalizeTimeInput(event.target.value),
-                          })
-                        }
-                        className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-950 outline-none"
-                      />
-                    </TimeField>
-
-                    <label className="flex items-center justify-end gap-3">
-                      <span className="text-sm font-black text-slate-800">
-                        {weekdayLabels[schedule.dayOfWeek]}
-                      </span>
-                      <input
-                        type="checkbox"
-                        checked={schedule.isEnabled}
-                        onChange={(event) =>
-                          updateSchedule(schedule.dayOfWeek, { isEnabled: event.target.checked })
-                        }
-                        className="h-5 w-5 accent-amber-500"
-                      />
-                    </label>
-                  </div>
+                    {weekdayLabels[schedule.dayOfWeek]}
+                  </button>
                 ))}
               </div>
+
+              {applySameTime ? (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <TimeField label="وقت الافتتاح">
+                    <input
+                      type="time"
+                      step={60}
+                      value={sharedOpenTime}
+                      onChange={(event) => setSharedOpenTime(normalizeTimeInput(event.target.value))}
+                      className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-950 outline-none"
+                    />
+                  </TimeField>
+
+                  <TimeField label="وقت الإغلاق">
+                    <input
+                      type="time"
+                      step={60}
+                      value={sharedCloseTime}
+                      onChange={(event) => setSharedCloseTime(normalizeTimeInput(event.target.value))}
+                      className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-950 outline-none"
+                    />
+                  </TimeField>
+                </div>
+              ) : (
+                <div className="mt-4 grid gap-3">
+                  {schedules.map((schedule) => (
+                    <div
+                      key={schedule.dayOfWeek}
+                      className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-[140px_minmax(0,1fr)_minmax(0,1fr)] sm:items-end"
+                    >
+                      <label className="flex items-center justify-end gap-3">
+                        <span className="text-sm font-black text-slate-800">
+                          {weekdayLabels[schedule.dayOfWeek]}
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={schedule.isEnabled}
+                          onChange={(event) =>
+                            updateSchedule(schedule.dayOfWeek, { isEnabled: event.target.checked })
+                          }
+                          className="h-5 w-5 accent-amber-500"
+                        />
+                      </label>
+
+                      <TimeField label="وقت الافتتاح">
+                        <input
+                          type="time"
+                          step={60}
+                          value={schedule.opensAt}
+                          onChange={(event) =>
+                            updateSchedule(schedule.dayOfWeek, {
+                              opensAt: normalizeTimeInput(event.target.value),
+                            })
+                          }
+                          className="min-h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-950 outline-none"
+                        />
+                      </TimeField>
+
+                      <TimeField label="وقت الإغلاق">
+                        <input
+                          type="time"
+                          step={60}
+                          value={schedule.closesAt}
+                          onChange={(event) =>
+                            updateSchedule(schedule.dayOfWeek, {
+                              closesAt: normalizeTimeInput(event.target.value),
+                            })
+                          }
+                          className="min-h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-950 outline-none"
+                        />
+                      </TimeField>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {feedback ? (

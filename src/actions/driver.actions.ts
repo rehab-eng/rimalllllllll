@@ -19,7 +19,7 @@ type RegisterDriverInput = {
     full_name: string;
     phone: string;
     license_number: string;
-    device_token: string;
+    device_token?: string | null;
   };
   vehicles: Array<
     Pick<VehicleRow, "plates_number" | "trailer_plates" | "capacity_liters" | "cubic_capacity">
@@ -142,12 +142,11 @@ export async function registerDriverWithVehicles(
     if (
       !driverData.full_name ||
       !driverData.phone ||
-      !driverData.license_number ||
-      !driverData.device_token
+      !driverData.license_number
     ) {
       return {
         success: false,
-        error: "يجب إدخال اسم السائق ورقم الهاتف ورقم الرخصة وتعريف الجهاز.",
+        error: "يجب إدخال اسم السائق ورقم الهاتف ورقم الرخصة.",
       };
     }
 
@@ -171,7 +170,7 @@ export async function registerDriverWithVehicles(
           ${driverData.full_name},
           ${driverData.phone},
           ${driverData.license_number},
-          ${driverData.device_token},
+          ${driverData.device_token || null},
           ${DriverStatus.ACTIVE},
           NULL
         )
@@ -256,19 +255,11 @@ export async function authenticateDriverByPhoneOrLicense(
     const sql = await getSql();
     const phone = trimText(input.phone);
     const licenseNumber = trimText(input.license_number);
-    const deviceToken = trimText(input.device_token);
 
     if (!phone && !licenseNumber) {
       return {
         success: false,
         error: "ادخل رقم الهاتف أو رقم الرخصة.",
-      };
-    }
-
-    if (!deviceToken) {
-      return {
-        success: false,
-        error: "تعذر التحقق من الجهاز الحالي.",
       };
     }
 
@@ -299,34 +290,6 @@ export async function authenticateDriverByPhoneOrLicense(
       return {
         success: false,
         error: "تعذر تسجيل الدخول. تحقق من بيانات السائق.",
-      };
-    }
-
-    if (driver.device_token && driver.device_token !== deviceToken) {
-      return {
-        success: false,
-        error: "هذا الحساب مرتبط بجهاز آخر، يرجى التواصل مع الإدارة",
-      };
-    }
-
-    if (!driver.device_token) {
-      const [boundDriver] = await sql<DriverRow[]>`
-        UPDATE "Driver"
-        SET
-          device_token = ${deviceToken},
-          updated_at = NOW()
-        WHERE id = ${driver.id}
-        RETURNING
-          id, code, full_name, phone, license_number, device_token, status, deleted_at, created_at, updated_at
-      `;
-
-      if (!boundDriver) {
-        throw new Error("تعذر ربط الحساب بالجهاز الحالي.");
-      }
-
-      return {
-        success: true,
-        data: boundDriver,
       };
     }
 

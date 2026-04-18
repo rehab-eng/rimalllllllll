@@ -93,13 +93,11 @@ export type DriverAuthVehicleInput = {
 export type DriverLoginPayload = {
   phone: string;
   licenseNumber: string;
-  deviceToken: string;
 };
 
 export type DriverRegisterPayload = {
   fullName: string;
   phone: string;
   licenseNumber: string;
-  deviceToken: string;
   vehicles: DriverAuthVehicleInput[];
 };
