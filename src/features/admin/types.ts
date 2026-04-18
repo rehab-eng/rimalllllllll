@@ -13,7 +13,7 @@ import type {
 
 export type AdminRealtimeFuelLog = FuelLogRow & {
   driver?: Pick<DriverRow, "id" | "code" | "full_name" | "phone" | "status"> | null;
-  vehicle?: Pick<VehicleRow, "id" | "plates_number" | "trailer_plates" | "truck_type"> | null;
+  vehicle?: Pick<VehicleRow, "id" | "plates_number" | "trailer_plates" | "capacity_liters"> | null;
   station?: Pick<StationRow, "id" | "name" | "location" | "is_active"> | null;
 };
 
@@ -21,7 +21,7 @@ export type AdminFuelLogRow = FuelLogRow & {
   fuel_type: FuelType;
   status: FuelLogStatus;
   driver: Pick<DriverRow, "id" | "code" | "full_name" | "phone" | "status">;
-  vehicle: Pick<VehicleRow, "id" | "plates_number" | "trailer_plates" | "truck_type">;
+  vehicle: Pick<VehicleRow, "id" | "plates_number" | "trailer_plates" | "capacity_liters">;
   station?: Pick<StationRow, "id" | "name" | "location" | "is_active"> | null;
 };
 

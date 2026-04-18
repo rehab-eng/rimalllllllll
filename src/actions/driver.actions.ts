@@ -3,7 +3,6 @@
 import {
   DriverStatus,
   type DriverRow,
-  type FuelLogRow,
   type VehicleRow,
 } from "../lib/db-types";
 import { getSql } from "../lib/prisma";
@@ -18,16 +17,18 @@ type RegisterDriverInput = {
   driver: {
     code?: string;
     full_name: string;
-    national_id: string;
     phone: string;
-    password?: string;
-    license_url?: string;
-    license_number?: string;
+    license_number: string;
   };
   vehicle: Pick<
     VehicleRow,
-    "truck_type" | "plates_number" | "trailer_plates" | "truck_volume" | "image_url"
+    "plates_number" | "trailer_plates" | "capacity_liters"
   >;
+};
+
+type DriverLoginInput = {
+  phone?: string;
+  license_number?: string;
 };
 
 type VehicleConsumptionSummary = {
@@ -55,7 +56,6 @@ const trimText = (value: string | undefined | null): string => (value ?? "").tri
 
 const generateDriverCode = (): string => {
   const seed = Math.random().toString(36).slice(2, 6).toUpperCase();
-
   return `DRV-${Date.now().toString().slice(-6)}-${seed}`;
 };
 
@@ -63,7 +63,7 @@ const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
     if (message.includes("duplicate key")) {
-      return "رمز السائق أو رقم الهاتف مستخدم من قبل.";
+      return "رقم الهاتف أو رقم الرخصة مستخدم من قبل.";
     }
     return error.message;
   }
@@ -80,65 +80,49 @@ export async function registerDriverWithVehicle(
     const driverData = {
       code: trimText(input.driver.code) || generateDriverCode(),
       full_name: trimText(input.driver.full_name),
-      national_id: trimText(input.driver.national_id),
       phone: trimText(input.driver.phone),
-      password: trimText(input.driver.password) || null,
-      license_url: trimText(input.driver.license_url) || null,
-      license_number: trimText(input.driver.license_number) || null,
+      license_number: trimText(input.driver.license_number),
     };
 
     const vehicleData = {
-      truck_type: trimText(input.vehicle.truck_type),
       plates_number: trimText(input.vehicle.plates_number),
       trailer_plates: trimText(input.vehicle.trailer_plates) || null,
-      truck_volume: Number(input.vehicle.truck_volume),
-      image_url: trimText(input.vehicle.image_url) || null,
+      capacity_liters: Number(input.vehicle.capacity_liters),
     };
 
     if (
       !driverData.full_name ||
-      !driverData.national_id ||
       !driverData.phone ||
-      !vehicleData.truck_type ||
+      !driverData.license_number ||
       !vehicleData.plates_number
     ) {
       return {
         success: false,
-        error: "يجب إدخال البيانات الأساسية للسائق والمركبة.",
+        error: "يجب إدخال بيانات السائق الأساسية وبيانات الشاحنة.",
       };
     }
 
-    if (!driverData.license_url && !driverData.license_number) {
+    if (!Number.isFinite(vehicleData.capacity_liters) || vehicleData.capacity_liters <= 0) {
       return {
         success: false,
-        error: "أدخل صورة الرخصة أو رقم الرخصة.",
-      };
-    }
-
-    if (!Number.isFinite(vehicleData.truck_volume) || vehicleData.truck_volume <= 0) {
-      return {
-        success: false,
-        error: "سعة الشاحنة يجب أن تكون أكبر من صفر.",
+        error: "السعة باللتر يجب أن تكون أكبر من صفر.",
       };
     }
 
     const [createdDriver] = await sql<DriverRow[]>`
       INSERT INTO "Driver" (
-        code, full_name, national_id, phone, password, license_url, license_number, status, deleted_at
+        code, full_name, phone, license_number, status, deleted_at
       )
       VALUES (
         ${driverData.code},
         ${driverData.full_name},
-        ${driverData.national_id},
         ${driverData.phone},
-        ${driverData.password},
-        ${driverData.license_url},
         ${driverData.license_number},
         ${DriverStatus.ACTIVE},
         NULL
       )
       RETURNING
-        id, code, full_name, national_id, phone, password, license_url, license_number, status, deleted_at, created_at, updated_at
+        id, code, full_name, phone, license_number, status, deleted_at, created_at, updated_at
     `;
 
     if (!createdDriver) {
@@ -147,23 +131,21 @@ export async function registerDriverWithVehicle(
 
     const [createdVehicle] = await sql<VehicleRow[]>`
       INSERT INTO "Vehicle" (
-        "driverId", truck_type, plates_number, trailer_plates, truck_volume, image_url, is_active
+        "driverId", plates_number, trailer_plates, capacity_liters, is_active
       )
       VALUES (
         ${createdDriver.id},
-        ${vehicleData.truck_type},
         ${vehicleData.plates_number},
         ${vehicleData.trailer_plates},
-        ${vehicleData.truck_volume},
-        ${vehicleData.image_url},
+        ${vehicleData.capacity_liters},
         true
       )
       RETURNING
-        id, "driverId", truck_type, plates_number, trailer_plates, truck_volume::float8 AS truck_volume, image_url, is_active, created_at, updated_at
+        id, "driverId", plates_number, trailer_plates, capacity_liters::float8 AS capacity_liters, is_active, created_at, updated_at
     `;
 
     if (!createdVehicle) {
-      throw new Error("تم إنشاء السائق وتعذر إنشاء المركبة.");
+      throw new Error("تم إنشاء السائق وتعذر إنشاء الشاحنة.");
     }
 
     return {
@@ -172,6 +154,62 @@ export async function registerDriverWithVehicle(
         driver: createdDriver,
         vehicle: createdVehicle,
       },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error),
+    };
+  }
+}
+
+export async function authenticateDriverByPhoneOrLicense(
+  input: DriverLoginInput,
+): Promise<ActionResponse<DriverRow>> {
+  try {
+    const sql = await getSql();
+    const phone = trimText(input.phone);
+    const licenseNumber = trimText(input.license_number);
+
+    if (!phone && !licenseNumber) {
+      return {
+        success: false,
+        error: "ادخل رقم الهاتف أو رقم الرخصة.",
+      };
+    }
+
+    const [driver] = await sql<DriverRow[]>`
+      SELECT
+        d.id,
+        d.code,
+        d.full_name,
+        d.phone,
+        d.license_number,
+        d.status,
+        d.deleted_at,
+        d.created_at,
+        d.updated_at
+      FROM "Driver" d
+      WHERE d.deleted_at IS NULL
+        AND d.status = ${DriverStatus.ACTIVE}
+        AND (
+          (${phone} <> '' AND d.phone = ${phone})
+          OR (${licenseNumber} <> '' AND d.license_number = ${licenseNumber})
+        )
+      ORDER BY d.id DESC
+      LIMIT 1
+    `;
+
+    if (!driver) {
+      return {
+        success: false,
+        error: "تعذر تسجيل الدخول. تحقق من بيانات السائق.",
+      };
+    }
+
+    return {
+      success: true,
+      data: driver,
     };
   } catch (error) {
     return {
@@ -205,10 +243,7 @@ export async function getDriverDashboardStatsByCode(
         d.id,
         d.code,
         d.full_name,
-        d.national_id,
         d.phone,
-        d.password,
-        d.license_url,
         d.license_number,
         d.status,
         d.deleted_at,
@@ -247,11 +282,9 @@ export async function getDriverDashboardStatsByCode(
       SELECT
         v.id,
         v."driverId",
-        v.truck_type,
         v.plates_number,
         v.trailer_plates,
-        v.truck_volume::float8 AS truck_volume,
-        v.image_url,
+        v.capacity_liters::float8 AS capacity_liters,
         v.is_active,
         v.created_at,
         v.updated_at,

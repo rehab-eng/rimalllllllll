@@ -138,7 +138,7 @@ export default function FuelFillForm({
                     {vehicle.platesNumber}
                   </p>
                   <p className={`mt-1 text-sm font-semibold ${isSelected ? "text-black" : "text-white"}`}>
-                    {vehicle.truckType}
+                    السعة: {formatArabicNumber(vehicle.capacityLiters)} لتر
                   </p>
                 </button>
               );

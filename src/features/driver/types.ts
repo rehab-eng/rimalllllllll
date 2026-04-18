@@ -10,10 +10,9 @@ export type ActionResult<T = void> = {
 
 export type DriverVehicleSummary = {
   id: number;
-  truckType: string;
   platesNumber: string;
   trailerPlates?: string | null;
-  imageUrl?: string | null;
+  capacityLiters: number;
   totalLiters: number;
   totalLogs: number;
 };
@@ -54,17 +53,16 @@ export type DriverNavigationItem = {
 };
 
 export type AddVehiclePayload = {
-  truckType: string;
   platesNumber: string;
   trailerPlates: string;
-  truckVolume: number;
+  capacityLiters: number;
 };
 
 export type FuelFillVehicleOption = {
   id: number;
-  truckType: string;
   platesNumber: string;
   trailerPlates?: string | null;
+  capacityLiters: number;
 };
 
 export type FuelFillStationOption = {

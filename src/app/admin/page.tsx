@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 
 const serializeForClient = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const pageBackground =
-  "min-h-screen bg-[radial-gradient(circle_at_top,rgba(245,245,244,0.14),transparent_22%),radial-gradient(circle_at_bottom_left,rgba(82,82,91,0.16),transparent_30%),linear-gradient(135deg,#030712_0%,#111827_45%,#1f2937_100%)]";
+  "min-h-screen bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(146,64,14,0.12),transparent_35%),linear-gradient(135deg,#fffbeb_0%,#fef3c7_42%,#fde68a_100%)]";
 
 type FuelLogRowRaw = {
   id: number;
@@ -44,7 +44,7 @@ type FuelLogRowRaw = {
   vehicle_id: number;
   vehicle_plates_number: string;
   vehicle_trailer_plates: string | null;
-  vehicle_truck_type: string;
+  vehicle_capacity_liters: number;
   station_id: number | null;
   station_name: string | null;
   station_location: string | null;
@@ -94,7 +94,7 @@ export default async function AdminPage() {
             v.id AS vehicle_id,
             v.plates_number AS vehicle_plates_number,
             v.trailer_plates AS vehicle_trailer_plates,
-            v.truck_type AS vehicle_truck_type,
+            v.capacity_liters::float8 AS vehicle_capacity_liters,
             s.id AS station_id,
             s.name AS station_name,
             s.location AS station_location,
@@ -218,7 +218,7 @@ export default async function AdminPage() {
           id: row.vehicle_id,
           plates_number: row.vehicle_plates_number,
           trailer_plates: row.vehicle_trailer_plates,
-          truck_type: row.vehicle_truck_type,
+          capacity_liters: Number(row.vehicle_capacity_liters),
         },
         station:
           row.station_id === null

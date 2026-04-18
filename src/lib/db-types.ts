@@ -25,10 +25,7 @@ export type DriverRow = {
   id: number;
   code: string;
   full_name: string;
-  national_id: string;
   phone: string;
-  password: string | null;
-  license_url: string | null;
   license_number: string | null;
   status: DriverStatus;
   deleted_at: Date | string | null;
@@ -39,11 +36,9 @@ export type DriverRow = {
 export type VehicleRow = {
   id: number;
   driverId: number;
-  truck_type: string;
   plates_number: string;
   trailer_plates: string | null;
-  truck_volume: number | string;
-  image_url: string | null;
+  capacity_liters: number | string;
   is_active: boolean;
   created_at: Date | string;
   updated_at: Date | string;

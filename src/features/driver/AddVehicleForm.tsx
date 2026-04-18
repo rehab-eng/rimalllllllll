@@ -9,59 +9,62 @@ import type { ActionResult, AddVehiclePayload, DriverVehicleSummary } from "./ty
 type AddVehicleFormProps = {
   existingVehicles: DriverVehicleSummary[];
   onSubmit: (payload: AddVehiclePayload) => Promise<ActionResult> | ActionResult;
-  truckTypeOptions?: string[];
-  volumeOptions?: number[];
+  capacityOptions?: number[];
 };
 
-const defaultTruckTypeOptions = ["شاحنة قلاب", "خلاطة", "صهريج مياه", "سطحة"];
-const defaultVolumeOptions = [18, 24, 32, 40];
+const defaultCapacityOptions = [8000, 12000, 16000, 20000, 24000];
 
 export default function AddVehicleForm({
   existingVehicles,
   onSubmit,
-  truckTypeOptions = defaultTruckTypeOptions,
-  volumeOptions = defaultVolumeOptions,
+  capacityOptions = defaultCapacityOptions,
 }: AddVehicleFormProps) {
-  const [truckType, setTruckType] = useState(truckTypeOptions[0] ?? "");
+  const [isFormOpen, setIsFormOpen] = useState(existingVehicles.length === 0);
   const [platesNumber, setPlatesNumber] = useState("");
   const [trailerPlates, setTrailerPlates] = useState("");
-  const [truckVolume, setTruckVolume] = useState(volumeOptions[0] ?? 18);
+  const [capacityLiters, setCapacityLiters] = useState(capacityOptions[0] ?? 8000);
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const nextVehicleLabel = `المركبة ${existingVehicles.length + 1}`;
+  const nextVehicleLabel = `الشاحنة ${existingVehicles.length + 1}`;
 
   const resetForm = () => {
-    setTruckType(truckTypeOptions[0] ?? "");
     setPlatesNumber("");
     setTrailerPlates("");
-    setTruckVolume(volumeOptions[0] ?? 18);
+    setCapacityLiters(capacityOptions[0] ?? 8000);
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFeedback(null);
 
-    if (!truckType || !platesNumber.trim()) {
+    if (!platesNumber.trim()) {
       setFeedback({
         kind: "error",
-        text: "نوع الشاحنة ورقم اللوحة مطلوبان.",
+        text: "رقم لوحة السيارة مطلوب.",
+      });
+      return;
+    }
+
+    if (!Number.isFinite(capacityLiters) || capacityLiters <= 0) {
+      setFeedback({
+        kind: "error",
+        text: "سعة الشاحنة باللتر يجب أن تكون أكبر من صفر.",
       });
       return;
     }
 
     startTransition(async () => {
       const result = await onSubmit({
-        truckType,
         platesNumber: platesNumber.trim(),
         trailerPlates: trailerPlates.trim(),
-        truckVolume,
+        capacityLiters,
       });
 
       if (!result.success) {
         setFeedback({
           kind: "error",
-          text: result.error ?? "تعذر إضافة هذه المركبة.",
+          text: result.error ?? "تعذر إضافة هذه الشاحنة.",
         });
         return;
       }
@@ -71,112 +74,111 @@ export default function AddVehicleForm({
         kind: "success",
         text: `تمت إضافة ${nextVehicleLabel} بنجاح.`,
       });
+      setIsFormOpen(false);
     });
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-4 text-white">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white/10 backdrop-blur-md border border-white/20 rounded-[28px] p-5 shadow-2xl"
-      >
+    <div className="mx-auto flex w-full max-w-md flex-col gap-4 text-amber-950">
+      <section className="bg-amber-50/85 backdrop-blur-md border border-amber-200 rounded-[28px] p-5 shadow-2xl">
         <div className="flex items-center justify-between gap-3">
-          <div className="rounded-2xl border border-white/20 bg-black/25 px-4 py-3 text-center">
-            <p className="text-xs font-bold tracking-[0.08em] text-white">الحالي</p>
-            <p className="mt-2 text-2xl font-black text-white">{formatArabicNumber(existingVehicles.length)}</p>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setIsFormOpen((value) => !value);
+              setFeedback(null);
+            }}
+            className="min-h-12 rounded-2xl border border-amber-300 bg-white px-4 text-sm font-black text-amber-950"
+          >
+            {isFormOpen ? "إغلاق النموذج" : "إضافة شاحنة جديدة"}
+          </button>
 
           <div className="text-right">
-            <p className="text-xs font-bold tracking-[0.14em] text-white">إضافة مركبة</p>
-            <h2 className="mt-2 text-2xl font-black text-white">{nextVehicleLabel}</h2>
+            <p className="text-xs font-bold tracking-[0.14em] text-amber-900">إدارة الشاحنات</p>
+            <h2 className="mt-2 text-2xl font-black text-amber-950">{nextVehicleLabel}</h2>
           </div>
         </div>
 
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-white/80 px-4 py-3 text-right">
+          <p className="text-sm font-bold text-amber-900">عدد الشاحنات المرتبطة بالحساب</p>
+          <p className="mt-1 text-2xl font-black text-amber-950">
+            {formatArabicNumber(existingVehicles.length)}
+          </p>
+        </div>
+
         {existingVehicles.length > 0 ? (
-          <div className="mt-5 grid gap-3">
+          <div className="mt-4 grid gap-3">
             {existingVehicles.map((vehicle, index) => (
-              <div key={vehicle.id} className="rounded-2xl border border-white/20 bg-black/25 p-4 text-right">
-                <p className="text-sm font-black text-white">{`المركبة ${index + 1}`}</p>
-                <p className="mt-2 text-base font-bold text-white">{vehicle.platesNumber}</p>
-                <p className="mt-1 text-sm font-semibold text-white">{vehicle.truckType}</p>
-                <p className="mt-1 text-sm font-semibold text-white">
-                  {formatArabicNumber(vehicle.totalLiters)} لتر عبر {formatArabicNumber(vehicle.totalLogs)} عمليات
+              <div
+                key={vehicle.id}
+                className="rounded-2xl border border-amber-200 bg-white/80 p-4 text-right"
+              >
+                <p className="text-sm font-black text-amber-900">{`الشاحنة ${index + 1}`}</p>
+                <p className="mt-2 text-base font-bold text-amber-950">{vehicle.platesNumber}</p>
+                <p className="mt-1 text-sm font-semibold text-amber-900">
+                  السعة: {formatArabicNumber(vehicle.capacityLiters)} لتر
                 </p>
               </div>
             ))}
           </div>
         ) : null}
 
-        <div className="mt-5 grid gap-4">
-          <Field label="نوع الشاحنة">
-            <select
-              value={truckType}
-              onChange={(event) => setTruckType(event.target.value)}
-              className="min-h-14 rounded-2xl border border-white/20 bg-black/30 px-4 text-base font-bold text-white outline-none"
+        {isFormOpen ? (
+          <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
+            <Field label="رقم لوحة السيارة">
+              <input
+                value={platesNumber}
+                onChange={(event) => setPlatesNumber(event.target.value)}
+                placeholder="أدخل رقم اللوحة"
+                className="min-h-14 rounded-2xl border border-amber-200 bg-white px-4 text-base font-bold text-amber-950 outline-none placeholder:text-amber-700/60"
+              />
+            </Field>
+
+            <Field label="رقم لوحة المقطورة">
+              <input
+                value={trailerPlates}
+                onChange={(event) => setTrailerPlates(event.target.value)}
+                placeholder="اختياري"
+                className="min-h-14 rounded-2xl border border-amber-200 bg-white px-4 text-base font-bold text-amber-950 outline-none placeholder:text-amber-700/60"
+              />
+            </Field>
+
+            <Field label="السعة / التكعيب باللتر">
+              <select
+                value={capacityLiters}
+                onChange={(event) => setCapacityLiters(Number(event.target.value))}
+                className="min-h-14 rounded-2xl border border-amber-200 bg-white px-4 text-base font-bold text-amber-950 outline-none"
+              >
+                {capacityOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {formatArabicNumber(option)} لتر
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            {feedback ? (
+              <div
+                className={`rounded-2xl border px-4 py-3 ${
+                  feedback.kind === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                    : "border-red-200 bg-red-50 text-red-700"
+                }`}
+              >
+                <p className="text-sm font-black">{feedback.text}</p>
+              </div>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={isPending}
+              className="min-h-16 rounded-2xl border border-amber-300 bg-amber-200 px-5 text-lg font-black text-amber-950 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {truckTypeOptions.map((option) => (
-                <option key={option} value={option} className="text-black">
-                  {option}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="رقم لوحة الشاحنة">
-            <input
-              value={platesNumber}
-              onChange={(event) => setPlatesNumber(event.target.value)}
-              placeholder="أدخل رقم اللوحة"
-              className="min-h-14 rounded-2xl border border-white/20 bg-black/30 px-4 text-base font-bold text-white outline-none placeholder:text-white/70"
-            />
-          </Field>
-
-          <Field label="رقم المقطورة">
-            <input
-              value={trailerPlates}
-              onChange={(event) => setTrailerPlates(event.target.value)}
-              placeholder="اختياري"
-              className="min-h-14 rounded-2xl border border-white/20 bg-black/30 px-4 text-base font-bold text-white outline-none placeholder:text-white/70"
-            />
-          </Field>
-
-          <Field label="سعة الشاحنة">
-            <select
-              value={truckVolume}
-              onChange={(event) => setTruckVolume(Number(event.target.value))}
-              className="min-h-14 rounded-2xl border border-white/20 bg-black/30 px-4 text-base font-bold text-white outline-none"
-            >
-              {volumeOptions.map((option) => (
-                <option key={option} value={option} className="text-black">
-                  {option} م³
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          {feedback ? (
-            <div
-              className={`rounded-2xl border px-4 py-3 ${
-                feedback.kind === "success"
-                  ? "border-white bg-white text-black"
-                  : "border-white/20 bg-black/30 text-white"
-              }`}
-            >
-              <p className={`text-sm font-black ${feedback.kind === "success" ? "text-black" : "text-white"}`}>
-                {feedback.text}
-              </p>
-            </div>
-          ) : null}
-
-          <button
-            type="submit"
-            disabled={isPending}
-            className="min-h-16 rounded-2xl border border-white bg-white px-5 text-lg font-black text-black disabled:cursor-not-allowed disabled:border-white/50 disabled:bg-white/60"
-          >
-            {isPending ? "جارٍ حفظ المركبة..." : `حفظ ${nextVehicleLabel}`}
-          </button>
-        </div>
-      </form>
+              {isPending ? "جارٍ حفظ الشاحنة..." : "حفظ الشاحنة"}
+            </button>
+          </form>
+        ) : null}
+      </section>
     </div>
   );
 }
@@ -190,7 +192,7 @@ function Field({
 }) {
   return (
     <label className="grid gap-2 text-right">
-      <span className="text-sm font-bold text-white">{label}</span>
+      <span className="text-sm font-bold text-amber-900">{label}</span>
       {children}
     </label>
   );

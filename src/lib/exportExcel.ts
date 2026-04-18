@@ -10,7 +10,7 @@ type ActionResponse<T> = {
 
 export type FuelLogExcelItem = FuelLogRow & {
   driver?: Pick<DriverRow, "code" | "full_name"> | null;
-  vehicle?: Pick<VehicleRow, "plates_number" | "trailer_plates" | "truck_type"> | null;
+  vehicle?: Pick<VehicleRow, "plates_number" | "trailer_plates" | "capacity_liters"> | null;
   station?: Pick<StationRow, "name"> | null;
 };
 
@@ -74,7 +74,7 @@ export function exportFuelLogsToExcel(
         "\u0627\u0644\u062D\u0627\u0644\u0629",
         "\u0631\u0642\u0645 \u0627\u0644\u0645\u0631\u0643\u0628\u0629",
         "\u0631\u0642\u0645 \u0627\u0644\u0645\u0642\u0637\u0648\u0631\u0629",
-        "\u0646\u0648\u0639 \u0627\u0644\u0634\u0627\u062D\u0646\u0629",
+        "\u0633\u0639\u0629 \u0627\u0644\u0634\u0627\u062D\u0646\u0629 (\u0644\u062A\u0631)",
         "\u0627\u0644\u0645\u062D\u0637\u0629",
         "\u0646\u0648\u0639 \u0627\u0644\u0648\u0642\u0648\u062F",
         "\u0643\u0648\u062F \u0627\u0644\u0633\u0627\u0626\u0642",
@@ -86,7 +86,7 @@ export function exportFuelLogsToExcel(
         statusLabels[log.status],
         log.vehicle?.plates_number ?? "",
         log.vehicle?.trailer_plates ?? "",
-        log.vehicle?.truck_type ?? "",
+        log.vehicle?.capacity_liters ?? "",
         log.station?.name ?? "",
         fuelTypeLabels[log.fuel_type],
         log.driver?.code ?? "",

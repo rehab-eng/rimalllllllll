@@ -32,11 +32,9 @@ type FuelLogWithRelations = FuelLogRow & {
   };
   vehicle: {
     id: number;
-    truck_type: string;
     plates_number: string;
     trailer_plates: string | null;
-    truck_volume: number;
-    image_url: string | null;
+    capacity_liters: number;
   };
   station: {
     id: number;
@@ -196,11 +194,9 @@ export async function logFuelEntry(
         ) AS driver,
         json_build_object(
           'id', v.id,
-          'truck_type', v.truck_type,
           'plates_number', v.plates_number,
           'trailer_plates', v.trailer_plates,
-          'truck_volume', v.truck_volume::float8,
-          'image_url', v.image_url
+          'capacity_liters', v.capacity_liters::float8
         ) AS vehicle,
         CASE
           WHEN s.id IS NULL THEN NULL

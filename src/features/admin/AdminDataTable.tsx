@@ -90,7 +90,7 @@ export default function AdminDataTable({
               <HeaderCell>الهاتف</HeaderCell>
               <HeaderCell>الحالة</HeaderCell>
               <HeaderCell>لوحة الشاحنة</HeaderCell>
-              <HeaderCell>نوع الشاحنة</HeaderCell>
+              <HeaderCell>سعة الشاحنة</HeaderCell>
               <HeaderCell>المحطة</HeaderCell>
               <HeaderCell>نوع الوقود</HeaderCell>
               <HeaderCell>اللترات</HeaderCell>
@@ -124,7 +124,7 @@ export default function AdminDataTable({
                       </span>
                     </BodyCell>
                     <BodyCell>{row.vehicle.plates_number}</BodyCell>
-                    <BodyCell>{row.vehicle.truck_type}</BodyCell>
+                    <BodyCell>{formatArabicNumber(Number(row.vehicle.capacity_liters))} لتر</BodyCell>
                     <BodyCell>{row.station?.name ?? "-"}</BodyCell>
                     <BodyCell>{fuelTypeLabels[row.fuel_type]}</BodyCell>
                     <BodyCell>{formatArabicNumber(Number(row.liters))} لتر</BodyCell>
