@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { exportDriversToCsv } from "../../lib/exportDriversCsv";
-import { driverStatusLabels, formatArabicNumber } from "../../lib/labels";
+import { driverStatusLabels, formatArabicDecimal, formatArabicNumber } from "../../lib/labels";
 import type { ActionResult } from "../driver/types";
 import type { AdminDriverRow } from "./types";
 
@@ -113,7 +113,7 @@ export default function AdminDriversPanel({
                           عرض الشاحنات ({formatArabicNumber(driver.vehicleCount)})
                         </button>
                       </BodyCell>
-                      <BodyCell>{formatArabicNumber(driver.totalFilledLiters)} لتر</BodyCell>
+                      <BodyCell>{formatArabicDecimal(driver.totalFilledLiters)} لتر</BodyCell>
                       <BodyCell>{formatArabicNumber(driver.totalFuelLogs)}</BodyCell>
                       <BodyCell>
                         <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-700">
@@ -208,14 +208,14 @@ export default function AdminDriversPanel({
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       <div className="rounded-xl bg-white px-3 py-3">
                         <p className="text-sm font-black text-slate-900">
-                          {formatArabicNumber(Number(vehicle.capacity_liters))} لتر
+                          {formatArabicDecimal(Number(vehicle.capacity_liters))} لتر
                         </p>
                         <p className="mt-1 text-xs font-bold text-slate-500">سعة التانك</p>
                       </div>
 
                       <div className="rounded-xl bg-white px-3 py-3">
                         <p className="text-sm font-black text-slate-900">
-                          {formatArabicNumber(Number(vehicle.cubic_capacity))}
+                          {formatArabicDecimal(Number(vehicle.cubic_capacity))}
                         </p>
                         <p className="mt-1 text-xs font-bold text-slate-500">التكعيب</p>
                       </div>

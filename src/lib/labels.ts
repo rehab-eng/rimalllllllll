@@ -33,6 +33,12 @@ export const formatArabicNumber = (value: number): string =>
     maximumFractionDigits: 0,
   }).format(value);
 
+export const formatArabicDecimal = (value: number): string =>
+  new Intl.NumberFormat("ar-LY", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+
 export const formatArabicDateTime = (value: Date | string): string => {
   const date = value instanceof Date ? value : new Date(value);
 

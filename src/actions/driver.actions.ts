@@ -5,6 +5,11 @@ import {
   type DriverRow,
   type VehicleRow,
 } from "../lib/db-types";
+import {
+  getVehicleValidationError,
+  type VehicleMutationInput,
+  vehicleMutationListSchema,
+} from "../lib/vehicle-schemas";
 import { getSql } from "../lib/prisma";
 
 type ActionResponse<T> = {
@@ -53,13 +58,6 @@ type DriverDashboardStats = {
   vehicleConsumption: VehicleConsumptionSummary[];
 };
 
-type NormalizedVehicleInput = {
-  plates_number: string;
-  trailer_plates: string | null;
-  capacity_liters: number;
-  cubic_capacity: number;
-};
-
 const trimText = (value: string | undefined | null): string => (value ?? "").trim();
 
 const generateDriverCode = (): string => {
@@ -81,47 +79,26 @@ const getErrorMessage = (error: unknown): string => {
 
 const normalizeVehicles = (
   vehicles: RegisterDriverInput["vehicles"],
-): ActionResponse<NormalizedVehicleInput[]> => {
-  const normalizedVehicles = vehicles.map((vehicle) => ({
-    plates_number: trimText(vehicle.plates_number),
-    trailer_plates: trimText(vehicle.trailer_plates) || null,
-    capacity_liters: Number(vehicle.capacity_liters),
-    cubic_capacity: Number(vehicle.cubic_capacity),
-  }));
+): ActionResponse<VehicleMutationInput[]> => {
+  const parsedVehicles = vehicleMutationListSchema.safeParse(
+    vehicles.map((vehicle) => ({
+      plates_number: vehicle.plates_number,
+      trailer_plates: vehicle.trailer_plates,
+      capacity_liters: vehicle.capacity_liters,
+      cubic_capacity: vehicle.cubic_capacity,
+    })),
+  );
 
-  if (normalizedVehicles.length === 0) {
+  if (!parsedVehicles.success) {
     return {
       success: false,
-      error: "يجب إدخال بيانات شاحنة واحدة على الأقل.",
+      error: getVehicleValidationError(parsedVehicles.error),
     };
-  }
-
-  for (const vehicle of normalizedVehicles) {
-    if (!vehicle.plates_number) {
-      return {
-        success: false,
-        error: "رقم لوحة الشاحنة مطلوب لكل مركبة.",
-      };
-    }
-
-    if (!Number.isFinite(vehicle.capacity_liters) || vehicle.capacity_liters <= 0) {
-      return {
-        success: false,
-        error: "سعة التانك باللتر يجب أن تكون أكبر من صفر.",
-      };
-    }
-
-    if (!Number.isFinite(vehicle.cubic_capacity) || vehicle.cubic_capacity <= 0) {
-      return {
-        success: false,
-        error: "تكعيب الشاحنة يجب أن يكون أكبر من صفر.",
-      };
-    }
   }
 
   return {
     success: true,
-    data: normalizedVehicles,
+    data: parsedVehicles.data,
   };
 };
 

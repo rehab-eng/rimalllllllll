@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 
 import type { FuelType } from "../../lib/db-types";
 import {
-  formatArabicNumber,
+  formatArabicDecimal,
   fuelTypeLabels,
   stationRuntimeStatusLabels,
 } from "../../lib/labels";
@@ -40,26 +40,20 @@ export default function FuelFillForm({
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    if (!vehicles.some((vehicle) => String(vehicle.id) === selectedVehicleId)) {
-      setSelectedVehicleId(String(vehicles[0]?.id ?? ""));
-    }
-  }, [selectedVehicleId, vehicles]);
+  const resolvedSelectedVehicleId = vehicles.some((vehicle) => String(vehicle.id) === selectedVehicleId)
+    ? selectedVehicleId
+    : String(vehicles[0]?.id ?? "");
 
-  useEffect(() => {
-    const nextStationId = String(openStations[0]?.id ?? stations[0]?.id ?? "");
-    if (!stations.some((station) => String(station.id) === selectedStationId)) {
-      setSelectedStationId(nextStationId);
-      return;
-    }
+  const fallbackStationId = String(openStations[0]?.id ?? stations[0]?.id ?? "");
+  const resolvedSelectedStationId = !stations.some((station) => String(station.id) === selectedStationId)
+    ? fallbackStationId
+    : openStations.length > 0 &&
+        !openStations.some((station) => String(station.id) === selectedStationId)
+      ? fallbackStationId
+      : selectedStationId;
 
-    if (openStations.length > 0 && !openStations.some((station) => String(station.id) === selectedStationId)) {
-      setSelectedStationId(nextStationId);
-    }
-  }, [openStations, selectedStationId, stations]);
-
-  const selectedVehicle = vehicles.find((vehicle) => String(vehicle.id) === selectedVehicleId);
-  const selectedStation = stations.find((station) => String(station.id) === selectedStationId);
+  const selectedVehicle = vehicles.find((vehicle) => String(vehicle.id) === resolvedSelectedVehicleId);
+  const selectedStation = stations.find((station) => String(station.id) === resolvedSelectedStationId);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -135,7 +129,7 @@ export default function FuelFillForm({
         ) : (
           <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
             {openStations.map((station, index) => {
-              const isSelected = String(station.id) === selectedStationId;
+              const isSelected = String(station.id) === resolvedSelectedStationId;
 
               return (
                 <button
@@ -165,7 +159,7 @@ export default function FuelFillForm({
         <SectionLabel title="الشاحنة" />
         <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
           {vehicles.map((vehicle) => {
-            const isSelected = String(vehicle.id) === selectedVehicleId;
+            const isSelected = String(vehicle.id) === resolvedSelectedVehicleId;
 
             return (
               <button
@@ -180,7 +174,7 @@ export default function FuelFillForm({
               >
                 <p className="text-sm font-black">{vehicle.platesNumber}</p>
                 <p className="mt-1 text-xs font-semibold text-slate-500">
-                  {formatArabicNumber(vehicle.capacityLiters)} لتر
+                  {formatArabicDecimal(vehicle.capacityLiters)} لتر
                 </p>
               </button>
             );

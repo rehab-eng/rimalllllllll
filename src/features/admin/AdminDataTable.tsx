@@ -7,7 +7,7 @@ import type { FuelLogStatus } from "../../lib/db-types";
 import {
   driverStatusLabels,
   formatArabicDateTime,
-  formatArabicNumber,
+  formatArabicDecimal,
   fuelLogStatusLabels,
   fuelTypeLabels,
 } from "../../lib/labels";
@@ -129,10 +129,10 @@ export default function AdminDataTable({
                     </BodyCell>
 
                     <BodyCell>{row.vehicle.plates_number}</BodyCell>
-                    <BodyCell>{formatArabicNumber(Number(row.vehicle.capacity_liters))} لتر</BodyCell>
+                    <BodyCell>{formatArabicDecimal(Number(row.vehicle.capacity_liters))} لتر</BodyCell>
                     <BodyCell>{row.station?.name ?? "-"}</BodyCell>
                     <BodyCell>{fuelTypeLabels[row.fuel_type]}</BodyCell>
-                    <BodyCell>{formatArabicNumber(Number(row.liters))} لتر</BodyCell>
+                    <BodyCell>{formatArabicDecimal(Number(row.liters))} لتر</BodyCell>
                     <BodyCell>
                       <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${statusStyles[row.status]}`}>
                         {fuelLogStatusLabels[row.status]}

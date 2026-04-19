@@ -29,38 +29,35 @@ enum DriverStatus {
 }
 
 model Driver {
-  id          Int          @id @default(autoincrement())
-  code        String       @unique @db.VarChar(50)
-  full_name   String       @db.VarChar(150)
-  national_id String       @db.VarChar(50)
-  phone       String       @db.VarChar(32)
-  password    String?      @db.VarChar(255)
-  license_url String?      @db.Text
-  license_number String?   @db.VarChar(100)
-  status      DriverStatus @default(ACTIVE)
-  deleted_at  DateTime?
-  created_at  DateTime     @default(now())
-  updated_at  DateTime     @updatedAt
-  vehicles    Vehicle[]
-  fuel_logs   FuelLog[]
+  id             Int          @id @default(autoincrement())
+  code           String       @unique @db.VarChar(50)
+  full_name      String       @db.VarChar(150)
+  phone          String       @db.VarChar(32)
+  license_number String       @db.VarChar(100)
+  device_token   String?      @db.VarChar(128)
+  status         DriverStatus @default(ACTIVE)
+  deleted_at     DateTime?
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
+  vehicles       Vehicle[]
+  fuel_logs      FuelLog[]
 
   @@index([status])
   @@index([phone])
 }
 
 model Vehicle {
-  id             Int      @id @default(autoincrement())
-  driverId       Int
-  truck_type     String   @db.VarChar(100)
-  plates_number  String   @db.VarChar(50)
-  trailer_plates String?  @db.VarChar(50)
-  truck_volume   Decimal  @db.Decimal(10, 2)
-  image_url      String?  @db.Text
-  is_active      Boolean  @default(true)
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
-  driver         Driver   @relation(fields: [driverId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  fuel_logs      FuelLog[]
+  id              Int      @id @default(autoincrement())
+  driverId        Int
+  plates_number   String   @db.VarChar(50)
+  trailer_plates  String?  @db.VarChar(50)
+  capacity_liters Decimal  @db.Decimal(10, 2)
+  cubic_capacity  Decimal  @db.Decimal(10, 2)
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  driver          Driver   @relation(fields: [driverId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  fuel_logs       FuelLog[]
 
   @@index([driverId])
   @@index([is_active])

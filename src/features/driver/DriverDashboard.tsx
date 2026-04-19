@@ -3,7 +3,7 @@
 import { Children, cloneElement, isValidElement, useMemo, useState, useTransition } from "react";
 import type { ReactElement, ReactNode } from "react";
 
-import { driverStatusLabels, formatArabicNumber } from "../../lib/labels";
+import { driverStatusLabels, formatArabicDecimal, formatArabicNumber } from "../../lib/labels";
 import type { DriverDashboardData, DriverNavigationItem } from "./types";
 
 type DriverDashboardProps = {
@@ -69,21 +69,32 @@ export default function DriverDashboard({
   const fallbackStatsElement = legacyChildren[2];
   const fallbackAddVehicleElement = legacyChildren[3];
 
-  const resolvedHomeContent = homeContent ?? (
-    <>
-      {legacyChildren[0] ?? null}
-      {legacyChildren[1] ?? null}
-    </>
+  const resolvedHomeContent = useMemo(
+    () =>
+      homeContent ?? (
+        <>
+          {legacyChildren[0] ?? null}
+          {legacyChildren[1] ?? null}
+        </>
+      ),
+    [homeContent, legacyChildren],
   );
 
-  const resolvedVehiclesContent = vehiclesContent ?? (
-    <>
-      {cloneStatsSection(fallbackStatsElement, "fleet")}
-      {fallbackAddVehicleElement ?? null}
-    </>
+  const resolvedVehiclesContent = useMemo(
+    () =>
+      vehiclesContent ?? (
+        <>
+          {cloneStatsSection(fallbackStatsElement, "fleet")}
+          {fallbackAddVehicleElement ?? null}
+        </>
+      ),
+    [fallbackAddVehicleElement, fallbackStatsElement, vehiclesContent],
   );
 
-  const resolvedHistoryContent = historyContent ?? cloneStatsSection(fallbackStatsElement, "history");
+  const resolvedHistoryContent = useMemo(
+    () => historyContent ?? cloneStatsSection(fallbackStatsElement, "history"),
+    [fallbackStatsElement, historyContent],
+  );
 
   const activeContent = useMemo(() => {
     if (activeTab === "vehicles") {
@@ -148,7 +159,7 @@ export default function DriverDashboard({
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-            <QuickStat label="لتر مؤكد" value={formatArabicNumber(driver.totalFilledLiters)} />
+            <QuickStat label="لتر مؤكد" value={formatArabicDecimal(driver.totalFilledLiters)} />
             <QuickStat label="عمليات" value={formatArabicNumber(driver.totalFuelLogs)} />
             <QuickStat label="محطات مفتوحة" value={formatArabicNumber(driver.activeStationCount)} />
           </div>

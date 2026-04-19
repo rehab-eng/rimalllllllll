@@ -1,4 +1,4 @@
-import { formatArabicNumber } from "../../lib/labels";
+import { formatArabicDecimal, formatArabicNumber } from "../../lib/labels";
 import type { DriverFuelHistoryItem, DriverVehicleSummary } from "./types";
 
 type DriverVehicleStatsProps = {
@@ -45,7 +45,7 @@ function FleetSection({ vehicles }: { vehicles: DriverVehicleSummary[] }) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="text-left">
                     <p className="text-lg font-black text-slate-950">
-                      {formatArabicNumber(vehicle.totalLiters)}
+                      {formatArabicDecimal(vehicle.totalLiters)}
                     </p>
                     <p className="text-xs font-bold text-slate-500">لتر مؤكد</p>
                   </div>
@@ -59,8 +59,8 @@ function FleetSection({ vehicles }: { vehicles: DriverVehicleSummary[] }) {
                 </div>
 
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
-                  <Metric label="سعة التانك" value={`${formatArabicNumber(vehicle.capacityLiters)} لتر`} />
-                  <Metric label="التكعيب" value={formatArabicNumber(vehicle.cubicCapacity)} />
+                  <Metric label="سعة التانك" value={`${formatArabicDecimal(vehicle.capacityLiters)} لتر`} />
+                  <Metric label="التكعيب" value={formatArabicDecimal(vehicle.cubicCapacity)} />
                   <Metric label="عدد العمليات" value={formatArabicNumber(vehicle.totalLogs)} />
                 </div>
               </div>
@@ -97,7 +97,7 @@ function HistorySection({ recentFuelLogs }: { recentFuelLogs: DriverFuelHistoryI
                 <div className="flex items-start justify-between gap-3">
                   <div className="text-left">
                     <p className="text-lg font-black text-slate-950">
-                      {formatArabicNumber(log.liters)} لتر
+                      {formatArabicDecimal(log.liters)} لتر
                     </p>
                     <p className="mt-1 text-xs font-bold text-slate-500">{log.status}</p>
                   </div>

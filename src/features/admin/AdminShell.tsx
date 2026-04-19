@@ -66,8 +66,14 @@ export default function AdminShell({ children }: AdminShellProps) {
                   pathname === item.href ? "text-amber-600" : "text-slate-800"
                 }`}
               >
-                <span>{item.icon}</span>
-                <span className="text-[11px] font-bold">{item.shortLabel}</span>
+                <span className={pathname === item.href ? "text-amber-600" : "text-slate-900"}>{item.icon}</span>
+                <span
+                  className={`text-[11px] font-bold ${
+                    pathname === item.href ? "text-amber-700" : "text-slate-900"
+                  }`}
+                >
+                  {item.shortLabel}
+                </span>
               </Link>
             ))}
           </nav>
@@ -139,8 +145,8 @@ function NavLink({
           : "border-slate-200 bg-white text-slate-800"
       }`}
     >
-      <span>{icon}</span>
-      <span>{label}</span>
+      <span className={isActive ? "text-amber-600" : "text-slate-900"}>{icon}</span>
+      <span className={isActive ? "text-amber-700" : "text-slate-900"}>{label}</span>
     </Link>
   );
 }

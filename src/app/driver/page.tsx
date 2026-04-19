@@ -34,6 +34,7 @@ import {
   getStationRuntimeStatus,
   weekdayLabels,
 } from "../../lib/station-status";
+import { getVehicleValidationError, vehicleMutationSchema } from "../../lib/vehicle-schemas";
 
 export const dynamic = "force-dynamic";
 // force cloudflare update
@@ -399,22 +400,17 @@ export default async function DriverPage() {
     async function handleAddVehicle(payload: AddVehiclePayload): Promise<ActionResult> {
       "use server";
 
-      const platesNumber = payload.platesNumber.trim();
-      const trailerPlates = payload.trailerPlates.trim();
-      const capacityLiters = Number(payload.capacityLiters);
-      const cubicCapacity = Number(payload.cubicCapacity);
+      const parsedVehicle = vehicleMutationSchema.safeParse({
+        plates_number: payload.platesNumber,
+        trailer_plates: payload.trailerPlates,
+        capacity_liters: payload.capacityLiters,
+        cubic_capacity: payload.cubicCapacity,
+      });
 
-      if (!platesNumber || !Number.isFinite(capacityLiters) || capacityLiters <= 0) {
+      if (!parsedVehicle.success) {
         return {
           success: false,
-          error: "يجب إدخال رقم اللوحة وسعة تانك صحيحة.",
-        };
-      }
-
-      if (!Number.isFinite(cubicCapacity) || cubicCapacity <= 0) {
-        return {
-          success: false,
-          error: "يجب إدخال تكعيب صحيح للشاحنة.",
+          error: getVehicleValidationError(parsedVehicle.error),
         };
       }
 
@@ -426,10 +422,10 @@ export default async function DriverPage() {
           )
           VALUES (
             ${sessionDriver.id},
-            ${platesNumber},
-            ${trailerPlates || null},
-            ${capacityLiters},
-            ${cubicCapacity},
+            ${parsedVehicle.data.plates_number},
+            ${parsedVehicle.data.trailer_plates},
+            ${parsedVehicle.data.capacity_liters},
+            ${parsedVehicle.data.cubic_capacity},
             true
           )
         `;

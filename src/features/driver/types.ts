@@ -57,8 +57,8 @@ export type DriverNavigationItem = {
 export type AddVehiclePayload = {
   platesNumber: string;
   trailerPlates: string;
-  capacityLiters: number;
-  cubicCapacity: number;
+  capacityLiters: string;
+  cubicCapacity: string;
 };
 
 export type FuelFillVehicleOption = {
@@ -86,8 +86,8 @@ export type FuelFillPayload = {
 export type DriverAuthVehicleInput = {
   platesNumber: string;
   trailerPlates: string;
-  capacityLiters: number;
-  cubicCapacity: number;
+  capacityLiters: string;
+  cubicCapacity: string;
 };
 
 export type DriverLoginPayload = {

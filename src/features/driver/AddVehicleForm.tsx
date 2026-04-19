@@ -18,8 +18,8 @@ export default function AddVehicleForm({
   const [isFormOpen, setIsFormOpen] = useState(existingVehicles.length === 0);
   const [platesNumber, setPlatesNumber] = useState("");
   const [trailerPlates, setTrailerPlates] = useState("");
-  const [capacityLiters, setCapacityLiters] = useState<number | "">("");
-  const [cubicCapacity, setCubicCapacity] = useState<number | "">("");
+  const [capacityLiters, setCapacityLiters] = useState("");
+  const [cubicCapacity, setCubicCapacity] = useState("");
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -42,10 +42,7 @@ export default function AddVehicleForm({
       return;
     }
 
-    const numericCapacity = Number(capacityLiters);
-    const numericCubic = Number(cubicCapacity);
-
-    if (!Number.isFinite(numericCapacity) || numericCapacity <= 0) {
+    if (!capacityLiters.trim()) {
       setFeedback({
         kind: "error",
         text: "أدخل سعة تانك صحيحة.",
@@ -53,7 +50,7 @@ export default function AddVehicleForm({
       return;
     }
 
-    if (!Number.isFinite(numericCubic) || numericCubic <= 0) {
+    if (!cubicCapacity.trim()) {
       setFeedback({
         kind: "error",
         text: "أدخل قيمة صحيحة لتكعيب الشاحنة.",
@@ -65,8 +62,8 @@ export default function AddVehicleForm({
       const result = await onSubmit({
         platesNumber: platesNumber.trim(),
         trailerPlates: trailerPlates.trim(),
-        capacityLiters: numericCapacity,
-        cubicCapacity: numericCubic,
+        capacityLiters: capacityLiters.trim(),
+        cubicCapacity: cubicCapacity.trim(),
       });
 
       if (!result.success) {
@@ -138,10 +135,14 @@ export default function AddVehicleForm({
                 <input
                   type="number"
                   min="0"
+                  step="0.01"
+                  lang="en-GB"
+                  dir="ltr"
+                  inputMode="decimal"
                   value={capacityLiters}
-                  onChange={(event) => setCapacityLiters(event.target.value ? Number(event.target.value) : "")}
+                  onChange={(event) => setCapacityLiters(event.target.value)}
                   placeholder="16000"
-                  className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
+                  className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-left font-sans text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
                 />
               </Field>
 
@@ -150,10 +151,13 @@ export default function AddVehicleForm({
                   type="number"
                   min="0"
                   step="0.01"
+                  lang="en-GB"
+                  dir="ltr"
+                  inputMode="decimal"
                   value={cubicCapacity}
-                  onChange={(event) => setCubicCapacity(event.target.value ? Number(event.target.value) : "")}
+                  onChange={(event) => setCubicCapacity(event.target.value)}
                   placeholder="45"
-                  className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
+                  className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-left font-sans text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
                 />
               </Field>
             </div>

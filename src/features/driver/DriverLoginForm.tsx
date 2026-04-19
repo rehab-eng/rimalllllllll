@@ -18,8 +18,8 @@ type DriverAuthPanelProps = {
 const createEmptyVehicle = (): DriverAuthVehicleInput => ({
   platesNumber: "",
   trailerPlates: "",
-  capacityLiters: 0,
-  cubicCapacity: 0,
+  capacityLiters: "",
+  cubicCapacity: "",
 });
 
 export default function DriverAuthPanel({ onLogin, onRegister }: DriverAuthPanelProps) {
@@ -291,10 +291,14 @@ function VehicleForm({
             <input
               type="number"
               min="0"
-              value={vehicle.capacityLiters || ""}
-              onChange={(event) => onChange({ capacityLiters: Number(event.target.value) })}
+              step="0.01"
+              lang="en-GB"
+              dir="ltr"
+              inputMode="decimal"
+              value={vehicle.capacityLiters}
+              onChange={(event) => onChange({ capacityLiters: event.target.value })}
               placeholder="16000"
-              className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
+              className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-left font-sans text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
             />
           </Field>
 
@@ -303,10 +307,13 @@ function VehicleForm({
               type="number"
               min="0"
               step="0.01"
-              value={vehicle.cubicCapacity || ""}
-              onChange={(event) => onChange({ cubicCapacity: Number(event.target.value) })}
+              lang="en-GB"
+              dir="ltr"
+              inputMode="decimal"
+              value={vehicle.cubicCapacity}
+              onChange={(event) => onChange({ cubicCapacity: event.target.value })}
               placeholder="45"
-              className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
+              className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-left font-sans text-base font-bold text-slate-950 outline-none placeholder:text-slate-400"
             />
           </Field>
         </div>
