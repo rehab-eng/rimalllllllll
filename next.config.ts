@@ -1,3 +1,4 @@
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -12,5 +13,7 @@ const nextConfig: NextConfig = {
     root: process.cwd(),
   },
 };
+
+initOpenNextCloudflareForDev();
 
 export default nextConfig;
