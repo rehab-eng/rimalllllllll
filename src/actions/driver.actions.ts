@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import {
   DriverStatus,
   type DriverRow,
@@ -8,6 +10,7 @@ import {
 import {
   getVehicleValidationError,
   type VehicleMutationInput,
+  vehicleMutationSchema,
   vehicleMutationListSchema,
 } from "../lib/vehicle-schemas";
 import { getSql } from "../lib/prisma";
@@ -35,6 +38,15 @@ type DriverLoginInput = {
   phone?: string;
   license_number?: string;
   device_token?: string;
+};
+
+type UpdateVehicleInput = {
+  vehicleId: number;
+  driverId?: number;
+  plates_number: string;
+  trailer_plates?: string | null;
+  capacity_liters: number | string;
+  cubic_capacity: number | string;
 };
 
 type VehicleConsumptionSummary = {
@@ -389,6 +401,121 @@ export async function getDriverDashboardStatsByCode(
         totalFilledLiters,
         vehicleConsumption,
       },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error),
+    };
+  }
+}
+
+export async function updateVehicle(
+  input: UpdateVehicleInput,
+): Promise<ActionResponse<VehicleRow>> {
+  try {
+    const sql = await getSql();
+    const vehicleId = Number(input.vehicleId);
+    const driverId =
+      input.driverId === undefined || input.driverId === null
+        ? null
+        : Number(input.driverId);
+
+    if (!Number.isInteger(vehicleId) || vehicleId <= 0) {
+      return {
+        success: false,
+        error: "المركبة غير صالحة للتعديل.",
+      };
+    }
+
+    if (driverId !== null && (!Number.isInteger(driverId) || driverId <= 0)) {
+      return {
+        success: false,
+        error: "تعذر التحقق من صلاحية تعديل المركبة.",
+      };
+    }
+
+    const parsedVehicle = vehicleMutationSchema.safeParse({
+      plates_number: input.plates_number,
+      trailer_plates: input.trailer_plates,
+      capacity_liters: input.capacity_liters,
+      cubic_capacity: input.cubic_capacity,
+    });
+
+    if (!parsedVehicle.success) {
+      return {
+        success: false,
+        error: getVehicleValidationError(parsedVehicle.error),
+      };
+    }
+
+    const updatedVehicle =
+      driverId === null
+        ? (
+            await sql<VehicleRow[]>`
+              UPDATE "Vehicle"
+              SET
+                plates_number = ${parsedVehicle.data.plates_number},
+                trailer_plates = ${parsedVehicle.data.trailer_plates},
+                capacity_liters = ${parsedVehicle.data.capacity_liters},
+                cubic_capacity = ${parsedVehicle.data.cubic_capacity},
+                updated_at = NOW()
+              WHERE id = ${vehicleId}
+                AND is_active = true
+              RETURNING
+                id,
+                "driverId",
+                plates_number,
+                trailer_plates,
+                capacity_liters::float8 AS capacity_liters,
+                cubic_capacity::float8 AS cubic_capacity,
+                is_active,
+                created_at,
+                updated_at
+            `
+          )[0]
+        : (
+            await sql<VehicleRow[]>`
+              UPDATE "Vehicle"
+              SET
+                plates_number = ${parsedVehicle.data.plates_number},
+                trailer_plates = ${parsedVehicle.data.trailer_plates},
+                capacity_liters = ${parsedVehicle.data.capacity_liters},
+                cubic_capacity = ${parsedVehicle.data.cubic_capacity},
+                updated_at = NOW()
+              WHERE id = ${vehicleId}
+                AND "driverId" = ${driverId}
+                AND is_active = true
+              RETURNING
+                id,
+                "driverId",
+                plates_number,
+                trailer_plates,
+                capacity_liters::float8 AS capacity_liters,
+                cubic_capacity::float8 AS cubic_capacity,
+                is_active,
+                created_at,
+                updated_at
+            `
+          )[0];
+
+    if (!updatedVehicle) {
+      return {
+        success: false,
+        error:
+          driverId === null
+            ? "المركبة غير موجودة."
+            : "المركبة غير موجودة أو لا تملك صلاحية تعديلها.",
+      };
+    }
+
+    revalidatePath("/driver");
+    revalidatePath("/admin");
+    revalidatePath("/admin/drivers");
+
+    return {
+      success: true,
+      data: updatedVehicle,
     };
   } catch (error) {
     return {

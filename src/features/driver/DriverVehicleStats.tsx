@@ -1,26 +1,48 @@
+"use client";
+
+import { useState } from "react";
+
 import { formatArabicDecimal, formatArabicNumber } from "../../lib/labels";
-import type { DriverFuelHistoryItem, DriverVehicleSummary } from "./types";
+import EditVehicleModal from "./EditVehicleModal";
+import type {
+  ActionResult,
+  DriverFuelHistoryItem,
+  DriverVehicleSummary,
+  UpdateVehiclePayload,
+} from "./types";
 
 type DriverVehicleStatsProps = {
   vehicles: DriverVehicleSummary[];
   recentFuelLogs: DriverFuelHistoryItem[];
   mode?: "fleet" | "history" | "combined";
+  onUpdateVehicle?: (payload: UpdateVehiclePayload) => Promise<ActionResult> | ActionResult;
 };
 
 export default function DriverVehicleStats({
   vehicles,
   recentFuelLogs,
   mode = "combined",
+  onUpdateVehicle,
 }: DriverVehicleStatsProps) {
   return (
     <>
-      {mode !== "history" ? <FleetSection vehicles={vehicles} /> : null}
+      {mode !== "history" ? (
+        <FleetSection vehicles={vehicles} onUpdateVehicle={onUpdateVehicle} />
+      ) : null}
       {mode !== "fleet" ? <HistorySection recentFuelLogs={recentFuelLogs} /> : null}
     </>
   );
 }
 
-function FleetSection({ vehicles }: { vehicles: DriverVehicleSummary[] }) {
+function FleetSection({
+  vehicles,
+  onUpdateVehicle,
+}: {
+  vehicles: DriverVehicleSummary[];
+  onUpdateVehicle?: (payload: UpdateVehiclePayload) => Promise<ActionResult> | ActionResult;
+}) {
+  const [editingVehicle, setEditingVehicle] = useState<DriverVehicleSummary | null>(null);
+
   return (
     <section className="border-b border-slate-200">
       <div className="px-4 py-5 text-right">
@@ -51,7 +73,18 @@ function FleetSection({ vehicles }: { vehicles: DriverVehicleSummary[] }) {
                   </div>
 
                   <div>
-                    <p className="text-base font-black text-slate-950">{vehicle.platesNumber}</p>
+                    <div className="flex items-center justify-end gap-2">
+                      {onUpdateVehicle ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditingVehicle(vehicle)}
+                          className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-700"
+                        >
+                          تعديل
+                        </button>
+                      ) : null}
+                      <p className="text-base font-black text-slate-950">{vehicle.platesNumber}</p>
+                    </div>
                     <p className="mt-1 text-sm font-semibold text-slate-500">
                       {vehicle.trailerPlates ? `مقطورة: ${vehicle.trailerPlates}` : "بدون لوحة مقطورة"}
                     </p>
@@ -68,6 +101,14 @@ function FleetSection({ vehicles }: { vehicles: DriverVehicleSummary[] }) {
           </div>
         )}
       </div>
+
+      {editingVehicle && onUpdateVehicle ? (
+        <EditVehicleModal
+          vehicle={editingVehicle}
+          onClose={() => setEditingVehicle(null)}
+          onSubmit={onUpdateVehicle}
+        />
+      ) : null}
     </section>
   );
 }

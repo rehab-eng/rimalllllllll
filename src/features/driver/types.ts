@@ -61,6 +61,10 @@ export type AddVehiclePayload = {
   cubicCapacity: string;
 };
 
+export type UpdateVehiclePayload = AddVehiclePayload & {
+  vehicleId: number;
+};
+
 export type FuelFillVehicleOption = {
   id: number;
   platesNumber: string;

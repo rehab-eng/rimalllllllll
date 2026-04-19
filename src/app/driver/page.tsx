@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import {
   authenticateDriverByPhoneOrLicense,
   registerDriverWithVehicles,
+  updateVehicle as updateDriverVehicle,
 } from "../../actions/driver.actions";
 import { logFuelEntry } from "../../actions/fuel.actions";
 import SystemStatusCard from "../../components/SystemStatusCard";
@@ -24,6 +25,7 @@ import type {
   FuelFillPayload,
   FuelFillStationOption,
   FuelFillVehicleOption,
+  UpdateVehiclePayload,
 } from "../../features/driver/types";
 import { DriverStatus, FuelLogStatus } from "../../lib/db-types";
 import { fuelLogStatusLabels, fuelTypeLabels, formatArabicDateTime } from "../../lib/labels";
@@ -467,6 +469,24 @@ export default async function DriverPage() {
       };
     }
 
+    async function handleUpdateVehicle(payload: UpdateVehiclePayload): Promise<ActionResult> {
+      "use server";
+
+      const result = await updateDriverVehicle({
+        vehicleId: payload.vehicleId,
+        driverId: sessionDriver.id,
+        plates_number: payload.platesNumber,
+        trailer_plates: payload.trailerPlates,
+        capacity_liters: payload.capacityLiters,
+        cubic_capacity: payload.cubicCapacity,
+      });
+
+      return {
+        success: result.success,
+        error: result.error,
+      };
+    }
+
     async function handleSignOut(): Promise<void> {
       "use server";
 
@@ -500,7 +520,11 @@ export default async function DriverPage() {
           <div className="space-y-4 pb-6">
             <FuelFillForm vehicles={fuelVehicles} stations={fuelStations} onSubmit={handleFuelFill} />
             <DriverStationsBoard stations={stationSummaries} />
-            <DriverVehicleStats vehicles={vehicleSummaries} recentFuelLogs={recentFuelHistory} />
+            <DriverVehicleStats
+              vehicles={vehicleSummaries}
+              recentFuelLogs={recentFuelHistory}
+              onUpdateVehicle={handleUpdateVehicle}
+            />
             <AddVehicleForm existingVehicles={vehicleSummaries} onSubmit={handleAddVehicle} />
           </div>
         </DriverDashboard>

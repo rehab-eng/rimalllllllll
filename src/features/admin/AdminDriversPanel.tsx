@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 
 import { exportDriversToCsv } from "../../lib/exportDriversCsv";
 import { driverStatusLabels, formatArabicDecimal, formatArabicNumber } from "../../lib/labels";
-import type { ActionResult } from "../driver/types";
+import EditVehicleModal from "../driver/EditVehicleModal";
+import type { ActionResult, UpdateVehiclePayload } from "../driver/types";
 import type { AdminDriverRow } from "./types";
 
 type AdminDriversPanelProps = {
@@ -12,6 +13,7 @@ type AdminDriversPanelProps = {
   onSuspendDriver: (driverId: number) => Promise<ActionResult> | ActionResult;
   onActivateDriver: (driverId: number) => Promise<ActionResult> | ActionResult;
   onDeleteDriver: (driverId: number) => Promise<ActionResult> | ActionResult;
+  onUpdateVehicle: (payload: UpdateVehiclePayload) => Promise<ActionResult> | ActionResult;
 };
 
 export default function AdminDriversPanel({
@@ -19,9 +21,11 @@ export default function AdminDriversPanel({
   onSuspendDriver,
   onActivateDriver,
   onDeleteDriver,
+  onUpdateVehicle,
 }: AdminDriversPanelProps) {
   const [feedback, setFeedback] = useState("");
   const [selectedDriver, setSelectedDriver] = useState<AdminDriverRow | null>(null);
+  const [editingVehicleId, setEditingVehicleId] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const runAction = (
@@ -42,6 +46,34 @@ export default function AdminDriversPanel({
         : result.error ?? "تعذر تصدير بيانات السائقين.",
     );
   };
+
+  const handleVehicleSaved = (payload: UpdateVehiclePayload) => {
+    setSelectedDriver((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        vehicles: current.vehicles.map((vehicle) =>
+          vehicle.id === payload.vehicleId
+            ? {
+                ...vehicle,
+                plates_number: payload.platesNumber,
+                trailer_plates: payload.trailerPlates.trim() || null,
+                capacity_liters: Number(payload.capacityLiters),
+                cubic_capacity: Number(payload.cubicCapacity),
+              }
+            : vehicle,
+        ),
+      };
+    });
+
+    setFeedback("تم تحديث بيانات المركبة.");
+  };
+
+  const editingVehicle =
+    selectedDriver?.vehicles.find((vehicle) => vehicle.id === editingVehicleId) ?? null;
 
   return (
     <>
@@ -107,7 +139,10 @@ export default function AdminDriversPanel({
                       <BodyCell>
                         <button
                           type="button"
-                          onClick={() => setSelectedDriver(driver)}
+                          onClick={() => {
+                            setSelectedDriver(driver);
+                            setEditingVehicleId(null);
+                          }}
                           className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-700"
                         >
                           عرض الشاحنات ({formatArabicNumber(driver.vehicleCount)})
@@ -169,7 +204,10 @@ export default function AdminDriversPanel({
           <button
             type="button"
             aria-label="إغلاق نافذة الشاحنات"
-            onClick={() => setSelectedDriver(null)}
+            onClick={() => {
+              setSelectedDriver(null);
+              setEditingVehicleId(null);
+            }}
             className="absolute inset-0 bg-slate-950/30"
           />
 
@@ -178,7 +216,10 @@ export default function AdminDriversPanel({
               <button
                 type="button"
                 aria-label="إغلاق"
-                onClick={() => setSelectedDriver(null)}
+                onClick={() => {
+                  setSelectedDriver(null);
+                  setEditingVehicleId(null);
+                }}
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500"
               >
                 <CloseIcon />
@@ -201,10 +242,23 @@ export default function AdminDriversPanel({
               ) : (
                 selectedDriver.vehicles.map((vehicle) => (
                   <div key={vehicle.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-right">
-                    <p className="text-base font-black text-slate-950">{vehicle.plates_number}</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">
-                      لوحة المقطورة: {vehicle.trailer_plates || "-"}
-                    </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setEditingVehicleId(vehicle.id)}
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700"
+                      >
+                        تعديل
+                      </button>
+
+                      <div>
+                        <p className="text-base font-black text-slate-950">{vehicle.plates_number}</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-500">
+                          لوحة المقطورة: {vehicle.trailer_plates || "-"}
+                        </p>
+                      </div>
+                    </div>
+
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       <div className="rounded-xl bg-white px-3 py-3">
                         <p className="text-sm font-black text-slate-900">
@@ -226,6 +280,23 @@ export default function AdminDriversPanel({
             </div>
           </div>
         </div>
+      ) : null}
+
+      {editingVehicle ? (
+        <EditVehicleModal
+          vehicle={{
+            id: editingVehicle.id,
+            platesNumber: editingVehicle.plates_number,
+            trailerPlates: editingVehicle.trailer_plates,
+            capacityLiters: editingVehicle.capacity_liters,
+            cubicCapacity: editingVehicle.cubic_capacity,
+          }}
+          title="تعديل مركبة السائق"
+          description={`تحديث بيانات المركبة التابعة إلى ${selectedDriver?.fullName ?? "السائق"}.`}
+          onClose={() => setEditingVehicleId(null)}
+          onSubmit={onUpdateVehicle}
+          onSaved={handleVehicleSaved}
+        />
       ) : null}
     </>
   );
