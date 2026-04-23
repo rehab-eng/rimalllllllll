@@ -6,6 +6,7 @@ type DriverCsvVehicle = {
 };
 
 type DriverCsvItem = {
+  code: string;
   fullName: string;
   phone: string;
   licenseNumber: string | null;
@@ -38,6 +39,7 @@ export function exportDriversToCsv(
     const rows = [
       [
         "اسم السائق",
+        "معرف السائق",
         "رقم الهاتف",
         "رقم الرخصة",
         "لوحة الشاحنة",
@@ -51,6 +53,7 @@ export function exportDriversToCsv(
       if (driver.vehicles.length === 0) {
         rows.push([
           driver.fullName,
+          driver.code,
           driver.phone,
           driver.licenseNumber ?? "",
           "",
@@ -64,6 +67,7 @@ export function exportDriversToCsv(
       for (const vehicle of driver.vehicles) {
         rows.push([
           driver.fullName,
+          driver.code,
           driver.phone,
           driver.licenseNumber ?? "",
           vehicle.plates_number,

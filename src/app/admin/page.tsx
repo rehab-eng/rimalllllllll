@@ -3,6 +3,7 @@ import {
   activateDriverAction,
   deleteDriverAction,
   suspendDriverAction,
+  updateFuelLogLitersAction,
 } from "../../features/admin/admin-actions";
 import AdminDataTable from "../../features/admin/AdminDataTable";
 import AdminPageHeader from "../../features/admin/AdminPageHeader";
@@ -44,6 +45,7 @@ export default async function AdminOverviewPage() {
         onSuspendDriver={suspendDriverAction}
         onActivateDriver={activateDriverAction}
         onDeleteDriver={deleteDriverAction}
+        onUpdateFuelLogLiters={updateFuelLogLitersAction}
       />
     </div>
   );

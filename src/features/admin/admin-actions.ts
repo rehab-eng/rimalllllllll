@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { deleteDriverAccount, updateDriverStatus, updateVehicle } from "../../actions/driver.actions";
+import { updateFuelLogLiters } from "../../actions/fuel.actions";
 import {
   deleteStation,
   saveStation,
@@ -10,7 +11,7 @@ import {
 } from "../../actions/station.actions";
 import { DriverStatus } from "../../lib/db-types";
 import type { ActionResult, UpdateVehiclePayload } from "../driver/types";
-import type { AdminStationFormPayload } from "./types";
+import type { AdminStationFormPayload, UpdateFuelLogLitersPayload } from "./types";
 
 export async function suspendDriverAction(driverId: number): Promise<ActionResult> {
   const result = await updateDriverStatus(driverId, DriverStatus.SUSPENDED);
@@ -64,6 +65,26 @@ export async function updateVehicleAction(payload: UpdateVehiclePayload): Promis
     trailer_plates: payload.trailerPlates,
     capacity_liters: payload.capacityLiters,
     cubic_capacity: payload.cubicCapacity,
+  });
+
+  if (result.success) {
+    revalidatePath("/admin");
+    revalidatePath("/admin/drivers");
+    revalidatePath("/driver");
+  }
+
+  return {
+    success: result.success,
+    error: result.error,
+  };
+}
+
+export async function updateFuelLogLitersAction(
+  payload: UpdateFuelLogLitersPayload,
+): Promise<ActionResult> {
+  const result = await updateFuelLogLiters({
+    fuelLogId: payload.fuelLogId,
+    liters: payload.liters,
   });
 
   if (result.success) {

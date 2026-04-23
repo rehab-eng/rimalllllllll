@@ -69,6 +69,8 @@ export function exportFuelLogsToExcel(
     const sheetData: Array<Array<string | number>> = [
       [
         "\u0645",
+        "\u0627\u0633\u0645 \u0627\u0644\u0633\u0627\u0626\u0642",
+        "\u0645\u0639\u0631\u0641 \u0627\u0644\u0633\u0627\u0626\u0642",
         "\u0627\u0644\u062A\u0627\u0631\u064A\u062E",
         "\u0627\u0644\u0644\u062A\u0631\u0627\u062A",
         "\u0627\u0644\u062D\u0627\u0644\u0629",
@@ -77,10 +79,11 @@ export function exportFuelLogsToExcel(
         "\u0633\u0639\u0629 \u0627\u0644\u0634\u0627\u062D\u0646\u0629 (\u0644\u062A\u0631)",
         "\u0627\u0644\u0645\u062D\u0637\u0629",
         "\u0646\u0648\u0639 \u0627\u0644\u0648\u0642\u0648\u062F",
-        "\u0643\u0648\u062F \u0627\u0644\u0633\u0627\u0626\u0642",
       ],
       ...fuelLogs.map((log, index) => [
         index + 1,
+        log.driver?.full_name ?? "",
+        log.driver?.code ?? "",
         formatDate(log.date),
         formatDecimal(log.liters),
         statusLabels[log.status],
@@ -89,7 +92,6 @@ export function exportFuelLogsToExcel(
         log.vehicle?.capacity_liters ?? "",
         log.station?.name ?? "",
         fuelTypeLabels[log.fuel_type],
-        log.driver?.code ?? "",
       ]),
     ];
 

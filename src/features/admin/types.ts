@@ -68,6 +68,11 @@ export type AdminStationFormPayload = {
   }>;
 };
 
+export type UpdateFuelLogLitersPayload = {
+  fuelLogId: number;
+  liters: string;
+};
+
 export type AdminStatItem = {
   id: string;
   label: string;

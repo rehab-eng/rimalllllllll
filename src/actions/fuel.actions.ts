@@ -22,6 +22,11 @@ type CreateFuelLogInput = {
   fuel_type?: FuelType;
 };
 
+type UpdateFuelLogLitersInput = {
+  fuelLogId: number;
+  liters: number | string;
+};
+
 type FuelLogWithRelations = FuelLogRow & {
   driver: {
     id: number;
@@ -225,6 +230,63 @@ export async function logFuelEntry(
         success: true,
         data: fuelLog,
         error: "تم حفظ التعبئة لكن الإشعار اللحظي لم يعمل.",
+      };
+    }
+
+    return {
+      success: true,
+      data: fuelLog,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error),
+    };
+  }
+}
+
+export async function updateFuelLogLiters(
+  input: UpdateFuelLogLitersInput,
+): Promise<ActionResponse<FuelLogRow>> {
+  try {
+    const sql = await getSql();
+    const fuelLogId = Number(input.fuelLogId);
+    const liters = Number(input.liters);
+
+    if (!Number.isInteger(fuelLogId) || fuelLogId <= 0) {
+      return {
+        success: false,
+        error: "سجل التعبئة غير صالح للتعديل.",
+      };
+    }
+
+    if (!Number.isFinite(liters) || liters < 0) {
+      return {
+        success: false,
+        error: "كمية الوقود يجب أن تكون صفر أو أكبر.",
+      };
+    }
+
+    const [fuelLog] = await sql<FuelLogRow[]>`
+      UPDATE "FuelLog"
+      SET liters = ${liters}
+      WHERE id = ${fuelLogId}
+      RETURNING
+        id,
+        "driverId",
+        "vehicleId",
+        "stationId",
+        liters::float8 AS liters,
+        fuel_type,
+        date,
+        confirmed_at,
+        status
+    `;
+
+    if (!fuelLog) {
+      return {
+        success: false,
+        error: "سجل التعبئة غير موجود.",
       };
     }
 
